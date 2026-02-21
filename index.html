@@ -851,7 +851,7 @@ Bespreek valkuilen, definitiekwesties, of fondsen die misschien niet passen vanw
 5. VOLGENDE STAPPEN
 Concrete prioritering: wat moet de klant als eerste aanvragen, welke deadlines zijn relevant, welke informatie moet nog worden verzameld.
 
-Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's. Geen markdown-symbolen behalve [naam](url) voor links. Gebruik duidelijke kopjes en lopende tekst.`;
+Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's. Gebruik GEEN HTML-tags in je antwoord. Gebruik GEEN markdown behalve [naam](url) voor links. Gebruik duidelijke kopjes in hoofdletters en lopende tekst.`;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -881,25 +881,32 @@ Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's. Geen mar
 
 function formatResult(text) {
   const HEADERS = ['PROFIEL','AANBEVOLEN','AANDACHT','KLEINE','VOLGENDE','SAMENVATTING','STAP'];
-  let html = '';
+
+  // Escape any raw HTML the AI might have output
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
   // Convert markdown links [naam](url) to clickable <a> tags
   function renderLinks(line) {
+    // First escape HTML so raw tags from AI don't render
+    line = escapeHtml(line);
     // Convert [text](url) markdown links
-    line = line.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--primary);text-decoration:underline;text-underline-offset:2px;">$1</a>');
+    line = line.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
     // Convert bare URLs to clickable links
-    line = line.replace(/(?<!\()(https?:\/\/[^\s<)"]+)/g, '<a href="$1" target="_blank" style="color:var(--primary);text-decoration:underline;text-underline-offset:2px;">$1</a>');
+    line = line.replace(/(https?:\/\/[^\s<&"]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
     return line;
   }
 
+  let html = '';
   for (let line of text.split('\n')) {
     line = line.trim();
     if (!line) { html += '<br>'; continue; }
     if (HEADERS.some(h => line.toUpperCase().startsWith(h)) && line.length < 80) {
-      html += `<div class="section-header">${line}</div>`;
-    } else if (/^\d+\.\s[A-Z]/.test(line) && line.length < 120) {
+      html += `<div class="section-header">${escapeHtml(line)}</div>`;
+    } else if (/^\d+\.\s/.test(line) && line.length < 120) {
       html += `<div class="fonds-card"><h3>${renderLinks(line)}</h3>`;
-    } else if (line.toLowerCase().includes('let op') || line.toLowerCase().includes('⚠️')) {
+    } else if (line.toLowerCase().includes('let op') || line.includes('⚠️')) {
       html += `<div class="warn-card"><h3>⚠️ Aandachtspunt</h3><p>${renderLinks(line.replace('⚠️','').trim())}</p></div>`;
     } else if (line.startsWith('- ') || line.startsWith('• ')) {
       html += `<p style="padding-left:1rem">→ ${renderLinks(line.substring(2))}</p>`;
