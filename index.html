@@ -304,7 +304,7 @@
 
       <div class="field">
         <label>Beschrijf het project zo concreet mogelijk</label>
-        <textarea id="projectOmschrijving" placeholder="bijv. Een filmmaker maakt een video-installatie over stedelijke verandering in Amsterdam. Opnames zijn gepland voor najaar 2025..."></textarea>
+        <textarea id="projectOmschrijving" placeholder="bijv. Een danser ontwikkelt een nieuw solowerk over culturele identiteit. Première gepland voor voorjaar 2026 in een theater in Rotterdam..."></textarea>
       </div>
 
       <div class="field">
@@ -356,8 +356,30 @@
       </div>
 
       <div class="field">
-        <label>Extra context <span class="sublabel">(eerdere subsidies, deadlines, partners etc.)</span></label>
-        <textarea id="extraContext" placeholder="bijv. heeft eerder Mondriaanfonds aangevraagd maar afgewezen, werkt samen met Paradiso..." style="min-height:70px;"></textarea>
+        <label>Al ontvangen of aangevraagde regelingen <span class="sublabel">— de AI houdt hier rekening mee per specifieke regeling</span></label>
+        <p class="field-note">Selecteer de specifieke regelingen die al zijn ontvangen, lopen of afgewezen. Andere regelingen bij hetzelfde fonds blijven gewoon in de scan — want je kunt bij veel fondsen meerdere regelingen aanvragen.</p>
+        <div class="tag-group" id="ontvangenTags" style="margin-bottom:0.5rem;">
+          <span class="tag" data-val="Stimuleringsfonds — Talentontwikkeling (⚠️ blokkeert alle andere Stimuleringsfonds regelingen)">Stimuleringsfonds: Talentontwikkeling ⚠️</span>
+          <span class="tag" data-val="Stimuleringsfonds — Projectsubsidie Architectuur">Stimuleringsfonds: Architectuur</span>
+          <span class="tag" data-val="Stimuleringsfonds — Projectsubsidie Digitale cultuur">Stimuleringsfonds: Digitale cultuur</span>
+          <span class="tag" data-val="Stimuleringsfonds — Projectsubsidie Vormgeving">Stimuleringsfonds: Vormgeving</span>
+          <span class="tag" data-val="AFK — Projectsubsidie">AFK: Projectsubsidie</span>
+          <span class="tag" data-val="AFK — Werkbijdrage">AFK: Werkbijdrage</span>
+          <span class="tag" data-val="Mondriaanfonds — Werkbijdrage">Mondriaanfonds: Werkbijdrage</span>
+          <span class="tag" data-val="Mondriaanfonds — Projectsubsidie">Mondriaanfonds: Projectsubsidie</span>
+          <span class="tag" data-val="Filmfonds — DocLab Interactive Grant">Filmfonds: DocLab Interactive Grant</span>
+          <span class="tag" data-val="Filmfonds — Ontwikkelingssubsidie">Filmfonds: Ontwikkelingssubsidie</span>
+          <span class="tag" data-val="Filmfonds — Productiesubsidie">Filmfonds: Productiesubsidie</span>
+          <span class="tag" data-val="Cultuurfonds — Projectsubsidie">Cultuurfonds: Projectsubsidie</span>
+          <span class="tag" data-val="VSBFonds — Projectsubsidie">VSBFonds: Projectsubsidie</span>
+          <span class="tag" data-val="Prins Bernhard Cultuurfonds — Projectsubsidie">Prins Bernhard: Projectsubsidie</span>
+        </div>
+        <input type="text" id="ontvangenAndere" placeholder="Andere regelingen: bijv. Gemeente Amsterdam projectsubsidie, Dioraphte...">
+      </div>
+
+      <div class="field">
+        <label>Extra context <span class="sublabel">(deadlines, partners, bijzonderheden etc.)</span></label>
+        <textarea id="extraContext" placeholder="bijv. deadline AFK is oktober, samenwerking met Eye Filmmuseum bevestigd..." style="min-height:70px;"></textarea>
       </div>
     </div>
 
@@ -390,7 +412,10 @@
       </div>
     </div>
     <div class="result-content" id="resultContent"></div>
-    <button class="reset-btn" onclick="resetForm()">← Nieuwe scan</button>
+    <div style="display:flex; gap:0.75rem; margin-top:1.5rem; flex-wrap:wrap;">
+      <button class="reset-btn" onclick="pasAan()">✏️ Aanpassen</button>
+      <button class="reset-btn" onclick="resetForm()" style="color:#c04040; border-color:#e8b0b0;">🗑️ Nieuwe scan (wist alles)</button>
+    </div>
   </div>
 </div>
 
@@ -406,7 +431,101 @@ function getSelected(id) {
   return [...document.querySelectorAll(`#${id} .tag.selected`)].map(t => t.dataset.val);
 }
 
-// ── Regional info ───────────────────────────────────────────────
+// ── Officiële reglementskennis per fonds ───────────────────────
+// Gebaseerd op officiële regelingen 2025-2028
+// Elke entry beschrijft uitsluitingsgronden en voorwaarden per SPECIFIEKE regeling
+const REGLEMENTEN = {
+  "Stimuleringsfonds Creatieve Industrie": {
+    url: "https://www.stimuleringsfonds.nl",
+    regelingen: [
+      {
+        naam: "Regeling Architectuur 2025-2028",
+        url: "https://www.stimuleringsfonds.nl/subsidies/architectuur/",
+        bedrag: "€10.000 – €50.000 (solo max €25.000, met partners max €50.000)",
+        doelgroep: "Architecten, beschouwers, ontwerpbureaus, culturele instellingen in vakgebied architectuur",
+        uitsluitingsgronden: [
+          "Aanvrager ontvangt al subsidie via culturele basisinfrastructuur (BIS) 2025-2028",
+          "Aanvrager heeft structurele subsidierelatie met rijksoverheid",
+          "Aanvrager ontvangt al subsidie via Regeling Vierjarige instellingssubsidie of Activiteitenprogramma's Stimuleringsfonds",
+          "Onderwijsinstellingen en postacademische instellingen",
+          "Aanvraag al in behandeling bij andere Stimuleringsfonds regeling",
+          "Project al gesubsidieerd door Stimuleringsfonds",
+          "⚠️ BELANGRIJK: Aanvrager ontvangt al TALENTONTWIKKELING-subsidie van Stimuleringsfonds tijdens projectlooptijd (Art. 6.2.j)",
+          "Al tweemaal afgewezen voor hetzelfde project bij Stimuleringsfonds",
+          "Max 1 aanvraag per subsidietijdvak, max 1 toekenning per kalenderjaar"
+        ],
+        cofinanciering: "Minimaal 20% van totale projectkosten verplicht",
+        looptijd: "Max 24 maanden"
+      },
+      {
+        naam: "Regeling Digitale cultuur 2025-2028",
+        url: "https://www.stimuleringsfonds.nl/subsidies/digitale-cultuur/",
+        bedrag: "€10.000 – €50.000 (solo max €25.000, met partners max €50.000)",
+        doelgroep: "Makers, beschouwers, ontwerpbureaus, culturele instellingen in vakgebied digitale cultuur (games, AV, creative coding, art-science etc.)",
+        uitsluitingsgronden: [
+          "Aanvrager ontvangt al subsidie via culturele basisinfrastructuur (BIS) 2025-2028",
+          "Aanvrager heeft structurele subsidierelatie met rijksoverheid",
+          "Aanvrager ontvangt al subsidie via Regeling Vierjarige instellingssubsidie of Activiteitenprogramma's Stimuleringsfonds",
+          "Onderwijsinstellingen en postacademische instellingen",
+          "Aanvraag al in behandeling bij andere Stimuleringsfonds regeling",
+          "Project al gesubsidieerd door Stimuleringsfonds",
+          "⚠️ BELANGRIJK: Aanvrager ontvangt al TALENTONTWIKKELING-subsidie van Stimuleringsfonds tijdens projectlooptijd (Art. 6.2.j)",
+          "Al tweemaal afgewezen voor hetzelfde project bij Stimuleringsfonds",
+          "Projecten gericht op digitalisering van collecties",
+          "Oprichten van websites/platforms zonder inhoudelijk raakvlak digitale cultuur",
+          "Max 1 aanvraag per subsidietijdvak, max 1 toekenning per kalenderjaar"
+        ],
+        cofinanciering: "Minimaal 20% van totale projectkosten verplicht",
+        looptijd: "Max 24 maanden"
+      },
+      {
+        naam: "Regeling Talentontwikkeling",
+        url: "https://www.stimuleringsfonds.nl/subsidies/talentontwikkeling/",
+        bedrag: "Variabel — zie website",
+        doelgroep: "Talentvolle makers vroeg in hun loopbaan — voor ontwikkelplan",
+        uitsluitingsgronden: [
+          "Ontvangers van Talentontwikkeling-subsidie mogen NIET tegelijk aanvragen bij Regeling Architectuur of Digitale cultuur (en vice versa)",
+          "Ontvangers zijn uitgesloten van andere projectregelingen Stimuleringsfonds tijdens looptijd ontwikkelplan"
+        ],
+        opmerking: "Als klant deze regeling al ontvangt: alle andere Stimuleringsfonds projectregelingen zijn geblokkeerd tot einde looptijd ontwikkelplan"
+      }
+    ]
+  }
+};
+
+function getReglementsContext(alleOntvangen, disciplines) {
+  // Build a specific warning block based on what client has received
+  const warnings = [];
+  const relevant = [];
+
+  // Check if client has Talentontwikkeling — this blocks ALL other Stimuleringsfonds regelingen
+  const hasTalent = alleOntvangen.some(o => o.toLowerCase().includes('talentontwikkeling'));
+  if (hasTalent) {
+    warnings.push("⚠️ KRITIEKE UITSLUITING: Klant ontvangt Stimuleringsfonds Talentontwikkeling. Op grond van Art. 6.2.j zijn ALLE andere Stimuleringsfonds regelingen (Architectuur, Digitale cultuur, Vormgeving etc.) uitgesloten ZOLANG het ontwikkelplan loopt. Noem GEEN Stimuleringsfonds regelingen als aanbeveling.");
+  }
+
+  // Build relevant reglement info for disciplines
+  const stimDiscs = ['design','architectuur','digitale cultuur','film','beeldende kunst'];
+  const isStimRelevant = disciplines.some(d => stimDiscs.includes(d));
+
+  if (isStimRelevant && !hasTalent) {
+    const stim = REGLEMENTEN["Stimuleringsfonds Creatieve Industrie"];
+    stim.regelingen.forEach(r => {
+      relevant.push(`REGELING: ${r.naam}
+URL: ${r.url}
+Bedrag: ${r.bedrag}
+Doelgroep: ${r.doelgroep}
+Cofinanciering: ${r.cofinanciering}
+Looptijd: ${r.looptijd}
+Uitsluitingsgronden (officieel, Art. 6.2):
+${r.uitsluitingsgronden.map(u => '  - ' + u).join('\n')}
+${r.opmerking ? 'Opmerking: ' + r.opmerking : ''}`);
+    });
+  }
+
+  return { warnings, relevant };
+}
+
 const REGIO_FONDSEN = {
   'amsterdam': { fondsen: ['Amsterdam Fonds voor de Kunsten (AFK)', 'TBI Klimaatterrein', 'W139'], gemeentelijk: 'Gemeente Amsterdam — Kunst & Cultuur subsidies' },
   'den haag': { fondsen: ['Stroom Den Haag', 'Gemeentefonds Den Haag Cultuur'], gemeentelijk: 'Gemeente Den Haag — cultuursubsidies' },
@@ -624,10 +743,12 @@ async function generateScan() {
   const naam = document.getElementById('naam').value.trim();
   const apiKey = document.getElementById('apiKey').value.trim();
   if (!apiKey) { alert('Vul eerst je API key in bovenaan de pagina.'); return; }
+
   const regio = document.getElementById('regio').value.trim();
   const achtergrond = document.getElementById('achtergrond').value.trim();
   const projectOmschrijving = document.getElementById('projectOmschrijving').value.trim();
   const extraContext = document.getElementById('extraContext').value.trim();
+  const ontvangenAndere = document.getElementById('ontvangenAndere').value.trim();
 
   const rechtsvorm = getSelected('rechtsVormTags');
   const disciplines = getSelected('disciplineTags');
@@ -636,7 +757,8 @@ async function generateScan() {
   const typeProject = getSelected('typeTags');
   const sociaal = getSelected('sociaalTags');
   const bedrag = getSelected('bedragTags');
-
+  const ontvangenFondsen = getSelected('ontvangenTags');
+  const alleOntvangen = [...ontvangenFondsen, ...(ontvangenAndere ? ontvangenAndere.split(',').map(s => s.trim()) : [])].filter(Boolean);
   if (!projectOmschrijving && disciplines.length === 0) { alert('Vul minimaal een projectomschrijving of discipline in.'); return; }
 
   document.getElementById('formSection').style.display = 'none';
@@ -646,28 +768,35 @@ async function generateScan() {
   const regioLower = regio.toLowerCase();
   const disciplineSet = new Set(disciplines);
   const rechtsSet = new Set(rechtsvorm);
+  const ontvangenSet = new Set(alleOntvangen.map(s => s.toLowerCase()));
 
   const scored = FONDSEN.map(f => {
+    // Skip fondsen already received/applied for
+    if (ontvangenSet.size > 0 && alleOntvangen.some(o => f.naam.toLowerCase().includes(o.toLowerCase()) || o.toLowerCase().includes(f.naam.toLowerCase().split(' ')[0]))) {
+      return { ...f, score: -99, uitgesloten: true };
+    }
     let score = 0;
     score += f.disciplines.filter(d => disciplineSet.has(d)).length * 3;
     if (f.regio && regioLower.includes(f.regio)) score += 5;
     if (f.sociaal && sociaal.includes(f.sociaal)) score += 6;
     if (typeProject.includes('crowdfunding') && f.type === 'crowdfunding') score += 6;
     if (achtergrond && f.naam.includes('Prins Clausfonds')) score += 4;
-    // Rechtsvorm match — boost if compatible, penalize if incompatible
     if (rechtsvorm.length > 0) {
       const compatible = f.rechtsvormen?.some(r => rechtsSet.has(r));
       if (compatible) score += 3;
-      else score -= 5; // incompatible rechtsvorm
+      else score -= 5;
     }
     return { ...f, score };
   }).filter(f => f.score > 0).sort((a,b) => b.score - a.score);
 
-  const topFondsen = scored.slice(0, 5);
+  const topFondsen = scored.slice(0, 6);
   const fondsInfo = topFondsen.map((f,i) => `${i+1}. ${f.naam} — ${f.focus} — ${f.url}${f.note ? '\n   ⚠️ Let op: ' + f.note : ''}\n   Geschikt voor: ${f.rechtsvormen?.join(', ')}`).join('\n\n');
 
   const regioKey = Object.keys(REGIO_FONDSEN).find(k => regioLower.includes(k));
   const regioExtra = regioKey ? `Regionale fondsen voor ${regio}: ${REGIO_FONDSEN[regioKey].fondsen.join(', ')} — en: ${REGIO_FONDSEN[regioKey].gemeentelijk}` : '';
+
+  // Get official reglement knowledge and warnings
+  const { warnings: regWarnings, relevant: regRelevant } = getReglementsContext(alleOntvangen, disciplines);
 
   const prompt = `Je bent een gespecialiseerde subsidieadviseur voor kunstenaars in Nederland. Schrijf een professionele, grondige subsidiescan in het Nederlands.
 
@@ -684,6 +813,9 @@ KLANTPROFIEL:
 - Maatschappelijke focus: ${sociaal.join(', ') || 'geen'}
 - Gevraagd bedrag: ${bedrag.join(', ') || 'onbekend'}
 - Extra context: ${extraContext || 'geen'}
+${alleOntvangen.length > 0 ? `\nAL ONTVANGEN / AANGEVRAAGD / AFGEWEZEN (specifieke regelingen):\n${alleOntvangen.join('\n')}` : ''}
+
+${regWarnings.length > 0 ? `\n⚠️ KRITIEKE REGLEMENTSCONTROLE — VERPLICHT MEENEMEN:\n${regWarnings.join('\n')}\n` : ''}
 
 ${websiteContext ? `WEBSITE/PORTFOLIO ANALYSE:\n${websiteContext}\n` : ''}
 ${documentContext ? `PROJECTPLAN / DOCUMENT:\n${documentContext}\n` : ''}
@@ -694,20 +826,32 @@ ${fondsInfo}
 REGIONALE AANVULLINGEN:
 ${regioExtra || 'Geen specifieke regiofondsen gevonden — adviseer de klant om bij de gemeente te informeren naar cultuursubsidies.'}
 
+${regRelevant.length > 0 ? `\nOFFICIËLE REGLEMENTSKENNIS (gebaseerd op officiële regelingen 2025-2028 — gebruik deze exacte informatie bij het bespreken van deze fondsen):\n\n${regRelevant.join('\n\n---\n\n')}` : ''}
+
 OPDRACHT:
-Schrijf een complete subsidiescan:
+Schrijf een complete subsidiescan met de volgende structuur. Gebruik voor elke URL het formaat: [naam](url) zodat links klikbaar zijn.
 
-1. PROFIEL SAMENVATTING — wie is de klant, wat is het project, welke rechtsvorm, en wat heb je opgemaakt uit website of document (indien aanwezig)
+1. PROFIEL SAMENVATTING
+Beschrijf wie de klant is, wat het project inhoudt, en wat je hebt opgemaakt uit het document of de website (indien aanwezig).
 
-2. AANBEVOLEN FONDSEN — voor elk fonds: naam, waarom het past (inclusief of de rechtsvorm matcht), de voornaamste criteria, een concrete tip voor de aanvraag, en de website URL
+2. AANBEVOLEN FONDSEN
+Voor elk fonds:
+- Naam + directe URL
+- Welke SPECIFIEKE REGELING of subsidieprogramma het meest passend is (niet alleen de naam van het fonds, maar de exacte regeling, bijv. "Mondriaanfonds — Projectsubsidie" of "AFK — Projectsubsidie Podiumkunsten"). Als je de exacte regeling niet zeker weet, zeg dat dan.
+- Waarom dit fonds/deze regeling past bij dit profiel en project
+- De voornaamste criteria en voorwaarden van die specifieke regeling
+- Een concrete, op maat gemaakte aanvraagtip
 
-3. AANDACHTSPUNTEN & DEFINITIEKWESTIES — bespreek eventuele valkuilen zoals de 'kunstenaar'-definitie bij bepaalde fondsen, of fondsen die niet openstaan voor de rechtsvorm van deze klant. Wees eerlijk en specifiek.
+3. KLEINERE STICHTINGEN & LOKALE FONDSEN
+Noem minimaal 3 kleinere of minder bekende fondsen of stichtingen die relevant kunnen zijn voor dit profiel — ook buiten de vaste lijst. Denk aan fondsjes voor specifieke disciplines, gemeentelijke regelingen, of regionale stichtingen. Wees concreet en realistisch. Vermeld ook hier de specifieke regeling en URL indien bekend.
 
-4. KLEINERE STICHTINGEN & GEMEENTELIJKE SUBSIDIES — noem minimaal 2-3 kleinere of lokale fondsen die relevant kunnen zijn. Wees concreet en realistisch voor Nederland.
+4. AANDACHTSPUNTEN & DEFINITIEKWESTIES
+Bespreek valkuilen, definitiekwesties, of fondsen die misschien niet passen vanwege rechtsvorm of andere criteria.
 
-5. VOLGENDE STAPPEN — prioriteer: welke fondsen eerst, welke informatie nog nodig is, en wat de klant nu moet doen.
+5. VOLGENDE STAPPEN
+Concrete prioritering: wat moet de klant als eerste aanvragen, welke deadlines zijn relevant, welke informatie moet nog worden verzameld.
 
-Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's. Geen markdown-symbolen. Gebruik duidelijke kopjes en lopende tekst.`;
+Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's. Geen markdown-symbolen behalve [naam](url) voor links. Gebruik duidelijke kopjes en lopende tekst.`;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -738,19 +882,29 @@ Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's. Geen mar
 function formatResult(text) {
   const HEADERS = ['PROFIEL','AANBEVOLEN','AANDACHT','KLEINE','VOLGENDE','SAMENVATTING','STAP'];
   let html = '';
+
+  // Convert markdown links [naam](url) to clickable <a> tags
+  function renderLinks(line) {
+    // Convert [text](url) markdown links
+    line = line.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--primary);text-decoration:underline;text-underline-offset:2px;">$1</a>');
+    // Convert bare URLs to clickable links
+    line = line.replace(/(?<!\()(https?:\/\/[^\s<)"]+)/g, '<a href="$1" target="_blank" style="color:var(--primary);text-decoration:underline;text-underline-offset:2px;">$1</a>');
+    return line;
+  }
+
   for (let line of text.split('\n')) {
     line = line.trim();
     if (!line) { html += '<br>'; continue; }
     if (HEADERS.some(h => line.toUpperCase().startsWith(h)) && line.length < 80) {
       html += `<div class="section-header">${line}</div>`;
     } else if (/^\d+\.\s[A-Z]/.test(line) && line.length < 120) {
-      html += `<div class="fonds-card"><h3>${line}</h3>`;
+      html += `<div class="fonds-card"><h3>${renderLinks(line)}</h3>`;
     } else if (line.toLowerCase().includes('let op') || line.toLowerCase().includes('⚠️')) {
-      html += `<div class="warn-card"><h3>⚠️ Aandachtspunt</h3><p>${line.replace('⚠️','').trim()}</p></div>`;
+      html += `<div class="warn-card"><h3>⚠️ Aandachtspunt</h3><p>${renderLinks(line.replace('⚠️','').trim())}</p></div>`;
     } else if (line.startsWith('- ') || line.startsWith('• ')) {
-      html += `<p style="padding-left:1rem">→ ${line.substring(2)}</p>`;
+      html += `<p style="padding-left:1rem">→ ${renderLinks(line.substring(2))}</p>`;
     } else {
-      html += `<p>${line}</p>`;
+      html += `<p>${renderLinks(line)}</p>`;
     }
   }
   return html;
@@ -761,10 +915,28 @@ function copyResult() {
     const b = event.target; b.textContent = '✓ Gekopieerd!'; setTimeout(() => b.textContent = '📋 Kopiëren', 2000);
   });
 }
-function resetForm() {
+function pasAan() {
   document.getElementById('resultSection').style.display = 'none';
   document.getElementById('formSection').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function resetForm() {
+  // Clear all text inputs
+  document.querySelectorAll('input[type="text"], input[type="password"], textarea').forEach(el => {
+    if (el.id !== 'apiKey') el.value = ''; // keep API key
+  });
+  // Deselect all tags
+  document.querySelectorAll('.tag.selected').forEach(t => t.classList.remove('selected'));
+  // Clear context
   websiteContext = ''; documentContext = '';
+  // Reset upload status messages
+  ['urlStatus','urlPreview','fileStatus','filePreview'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.className = el.className.includes('preview') ? 'context-preview' : 'status-msg'; }
+  });
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('formSection').style.display = 'block';
   window.scrollTo(0, 0);
 }
 </script>
