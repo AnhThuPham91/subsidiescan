@@ -536,14 +536,14 @@ ${r.opmerking ? 'Opmerking: ' + r.opmerking : ''}`);
 }
 
 const REGIO_FONDSEN = {
-  'amsterdam': { fondsen: ['Amsterdam Fonds voor de Kunsten (AFK)', 'TBI Klimaatterrein', 'W139'], gemeentelijk: 'Gemeente Amsterdam — Kunst & Cultuur subsidies' },
-  'den haag': { fondsen: ['Stroom Den Haag', 'Gemeentefonds Den Haag Cultuur'], gemeentelijk: 'Gemeente Den Haag — cultuursubsidies' },
-  'rotterdam': { fondsen: ['CBK Rotterdam', 'Prins Bernhard Cultuurfonds Zuid-Holland'], gemeentelijk: 'Gemeente Rotterdam — Cultuursubsidies' },
-  'utrecht': { fondsen: ['K.F. Hein Fonds', 'Prins Bernhard Cultuurfonds Utrecht'], gemeentelijk: 'Gemeente Utrecht — Cultuursubsidies' },
-  'eindhoven': { fondsen: ['Prins Bernhard Cultuurfonds Noord-Brabant'], gemeentelijk: 'Gemeente Eindhoven — Cultuur en Erfgoed' },
-  'groningen': { fondsen: ['Prins Bernhard Cultuurfonds Groningen'], gemeentelijk: 'Gemeente Groningen — Cultuursubsidies' },
-  'arnhem': { fondsen: ['Gelderse Cultuurfonds'], gemeentelijk: 'Gemeente Arnhem — Cultuursubsidie' },
-  'tilburg': { fondsen: ['Prins Bernhard Cultuurfonds Noord-Brabant'], gemeentelijk: 'Gemeente Tilburg — Cultuursubsidies' },
+  'amsterdam': { fondsen: ['Amsterdam Fonds voor de Kunsten (AFK)', 'W139', 'Stichting Elise Mathilde Fonds'], gemeentelijk: 'Gemeente Amsterdam — Kunst & Cultuur subsidies (amsterdam.nl/kunst-cultuur)' },
+  'den haag': { fondsen: ['Stroom Den Haag', 'Gemeente Den Haag Cultuursubsidie'], gemeentelijk: 'Gemeente Den Haag — cultuursubsidies' },
+  'rotterdam': { fondsen: ['CBK Rotterdam', 'Cultuurfonds Regio Rotterdam'], gemeentelijk: 'Gemeente Rotterdam — Cultuursubsidies' },
+  'utrecht': { fondsen: ['K.F. Hein Fonds', 'Cultuurfonds Regio Utrecht'], gemeentelijk: 'Gemeente Utrecht — Cultuursubsidies' },
+  'eindhoven': { fondsen: ['Cultuurfonds Regio Noord-Brabant', 'Jan Naaijkens Fonds'], gemeentelijk: 'Gemeente Eindhoven — Cultuur en Erfgoed' },
+  'groningen': { fondsen: ['Cultuurfonds Regio Groningen', 'Noorderpoort Fonds'], gemeentelijk: 'Gemeente Groningen — Cultuursubsidies' },
+  'arnhem': { fondsen: ['Cultuurfonds Regio Gelderland'], gemeentelijk: 'Gemeente Arnhem — Cultuursubsidie' },
+  'tilburg': { fondsen: ['Cultuurfonds Regio Noord-Brabant'], gemeentelijk: 'Gemeente Tilburg — Cultuursubsidies' },
 };
 function updateRegioInfo(val) {
   const key = Object.keys(REGIO_FONDSEN).find(k => val.toLowerCase().includes(k));
@@ -575,7 +575,7 @@ const FONDSEN = [
   { naam: "Nationaal Digitaal Erfgoed", focus: "digitaal erfgoed", url: "https://netwerkdigitaalerfgoed.nl", disciplines: ["digitale cultuur","erfgoed"], rechtsvormen: ["stichting","vereniging","individuele kunstenaar (zzp)"] },
   { naam: "Stroom Den Haag", focus: "beeldende kunst Den Haag", url: "https://stroom.nl", regio: "den haag", disciplines: ["beeldende kunst","fotografie","digitale cultuur"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting"] },
   { naam: "CBK Rotterdam", focus: "beeldende kunst Rotterdam", url: "https://cbk.nl", regio: "rotterdam", disciplines: ["beeldende kunst","fotografie","interdisciplinair"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting"] },
-  { naam: "Prins Bernhard Cultuurfonds", focus: "diverse disciplines, regionaal", url: "https://www.cultuurfonds.nl/prins-bernhard-cultuurfonds", disciplines: ["beeldende kunst","muziek","theater","dans","literatuur","erfgoed","film"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting","vereniging","kunstenaarscollectief (informeel)"] },
+  { naam: "Cultuurfonds — Prins Bernhard Cultuurfonds", focus: "diverse disciplines, regionaal fonds", url: "https://www.cultuurfonds.nl/prins-bernhard-cultuurfonds", disciplines: ["beeldende kunst","muziek","theater","dans","literatuur","erfgoed","film"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting","vereniging","kunstenaarscollectief (informeel)"] },
   { naam: "W139", focus: "experimentele beeldende kunst Amsterdam", url: "https://w139.nl", regio: "amsterdam", disciplines: ["beeldende kunst","interdisciplinair","film"], rechtsvormen: ["individuele kunstenaar (zzp)","kunstenaarscollectief (informeel)"] },
 ];
 
@@ -846,33 +846,30 @@ Schrijf een complete subsidiescan met de volgende structuur. Gebruik voor elke U
 Beschrijf wie de klant is, wat het project inhoudt, en wat je hebt opgemaakt uit het document of de website (indien aanwezig).
 
 2. AANBEVOLEN FONDSEN
-Voor elk fonds:
-- Naam + directe URL
-- Welke SPECIFIEKE REGELING of subsidieprogramma het meest passend is (niet alleen de naam van het fonds, maar de exacte regeling, bijv. "Mondriaanfonds — Projectsubsidie" of "AFK — Projectsubsidie Podiumkunsten"). Als je de exacte regeling niet zeker weet, zeg dat dan.
-- Waarom dit fonds/deze regeling past bij dit profiel en project
-- De voornaamste criteria en voorwaarden van die specifieke regeling
-- Een concrete, op maat gemaakte aanvraagtip
+Voor elk fonds schrijf je EXACT in dit formaat (geen afwijkingen):
+
+Naam Fonds — Specifieke Regeling
+Website: https://directe-url-naar-regeling.nl
+Waarom passend: [2-3 zinnen waarom dit past]
+Criteria: [2-3 voornaamste criteria van deze specifieke regeling]
+Aanvraagtip: [1 concrete tip]
 
 3. KLEINERE STICHTINGEN & LOKALE FONDSEN
-Noem minimaal 3 kleinere of minder bekende fondsen of stichtingen die relevant kunnen zijn voor dit profiel — ook buiten de vaste lijst. Denk aan fondsjes voor specifieke disciplines, gemeentelijke regelingen, of regionale stichtingen. Wees concreet en realistisch. Vermeld ook hier de specifieke regeling en URL indien bekend.
+Gebruik hetzelfde formaat als bij sectie 2. Noem minimaal 3 concrete fondsen, ook buiten de vaste lijst.
 
 4. AANDACHTSPUNTEN & DEFINITIEKWESTIES
-Bespreek valkuilen, definitiekwesties, of fondsen die misschien niet passen vanwege rechtsvorm of andere criteria.
-
-5. VOLGENDE STAPPEN
-Concrete prioritering: wat moet de klant als eerste aanvragen, welke deadlines zijn relevant, welke informatie moet nog worden verzameld.
+Schrijf dit als korte punten, elk op een nieuwe regel, beginnend met een streepje (-). Maximaal 6 punten. Geen lange alinea's.
 
 Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's.
 
 VERPLICHTE OPMAAKREGELS — volg deze EXACT:
 - Gebruik GEEN ##, **, *, of andere markdown-symbolen
 - Gebruik GEEN HTML-tags
-- Gebruik voor links ALLEEN dit formaat: [naam fonds](https://url.nl) — NIETS anders eromheen
-- Kopjes schrijf je in HOOFDLETTERS gevolgd door een witregel
-- Fondsnamen schrijf je op een eigen regel als: Naam Fonds — Specifieke Regeling
-- Daarna de URL op een eigen regel als: Website: [naam](url)
-${locatie.length > 0 && !locatie.includes('internationaal/buitenland') ? '- Het project is ALLEEN bedoeld voor Nederland. Sluit fondsen/regelingen specifiek voor internationaal werk of presentaties in het buitenland (zoals Mondriaanfonds Presentatie in het Buitenland) UIT.' : ''}
-- Maak de scan VOLLEDIG af — stop niet halverwege`;
+- Schrijf URLs ALTIJD als platte tekst: https://www.voorbeeld.nl — GEEN [naam](url) formaat, GEEN <a> tags
+- Kopjes schrijf je in HOOFDLETTERS
+- Focus ALLEEN op fondsen en regelingen die in 2026 open zijn of opengaan — noem geen gestopte regelingen
+${locatie.length > 0 && !locatie.includes('internationaal/buitenland') ? '- Het project is alleen voor Nederland. Sluit internationale regelingen (zoals Mondriaanfonds Presentatie Buitenland) UIT.' : ''}
+- Maak de scan volledig af`;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -913,25 +910,16 @@ function formatResult(text) {
     return line.trim();
   }
 
-  // Make URLs clickable — only real URLs, nothing else
+  // Make plain URLs clickable — AI now outputs plain text URLs only
   function renderLinks(line) {
-    // If the AI already output an <a> tag, strip it and extract just the URL and text
-    // Pattern: <a href="URL"...>text</a> — extract URL and text cleanly
-    line = line.replace(/<a\s+href="(https?:\/\/[^"]+)"[^>]*>([^<]*)<\/a>/g, 
-      '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$2 ↗</a>');
-    // Also handle unclosed tags: <a href="URL"...>text  (no closing tag, AI truncated)
-    line = line.replace(/<a\s+href="(https?:\/\/[^"]+)"[^>]*>([^<"]+)$/g,
-      '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$2 ↗</a>');
-    // Remove any leftover raw HTML attribute junk (target=, rel=, style=) that appears as plain text
-    line = line.replace(/"\s*target="_blank"\s*rel="noopener"\s*style="[^"]*">[^<\n]*/g, '');
-    // Match [text](url) — only if no <a> tag already present
-    if (!line.includes('<a ')) {
-      line = line.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-        '<a href="$2" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
-      // Match bare URLs
-      line = line.replace(/(https?:\/\/[^\s<>")\]]+)/g,
-        '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
-    }
+    // Remove any <a> tags the AI stubbornly outputs anyway, extract just the href URL
+    line = line.replace(/<a\s+href="(https?:\/\/[^"]+)"[^>]*>.*?<\/a>/g, '$1');
+    line = line.replace(/<a\s+href="(https?:\/\/[^"]+)"[^>]*>[^<]*/g, '$1');
+    // Remove any leftover HTML attribute text
+    line = line.replace(/["']\s*target=["']_blank["'][^>]*>[^\n<]*/g, '');
+    // Now convert plain URLs to links
+    line = line.replace(/(https?:\/\/[^\s<>")\]]+)/g,
+      '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
     return line;
   }
 
