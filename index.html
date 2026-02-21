@@ -320,6 +320,15 @@
       </div>
 
       <div class="field">
+        <label>Waar wordt het project gepresenteerd?</label>
+        <div class="tag-group" id="locatieTags">
+          <span class="tag" data-val="Nederland">Nederland</span>
+          <span class="tag" data-val="internationaal/buitenland">Internationaal / Buitenland</span>
+          <span class="tag" data-val="online">Online</span>
+        </div>
+      </div>
+
+      <div class="field">
         <label>Type activiteit</label>
         <div class="tag-group" id="typeTags">
           <span class="tag" data-val="nieuw werk maken">Nieuw werk</span>
@@ -755,6 +764,7 @@ async function generateScan() {
   const fase = getSelected('faseTags');
   const faseProj = getSelected('faseProjTags');
   const typeProject = getSelected('typeTags');
+  const locatie = getSelected('locatieTags');
   const sociaal = getSelected('sociaalTags');
   const bedrag = getSelected('bedragTags');
   const ontvangenFondsen = getSelected('ontvangenTags');
@@ -810,6 +820,7 @@ KLANTPROFIEL:
 - Projectomschrijving: ${projectOmschrijving || 'niet opgegeven'}
 - Projectfase: ${faseProj.join(', ') || 'niet opgegeven'}
 - Type activiteit: ${typeProject.join(', ') || 'niet opgegeven'}
+- Presentatielocatie: ${locatie.join(', ') || 'niet opgegeven'}
 - Maatschappelijke focus: ${sociaal.join(', ') || 'geen'}
 - Gevraagd bedrag: ${bedrag.join(', ') || 'onbekend'}
 - Extra context: ${extraContext || 'geen'}
@@ -851,7 +862,17 @@ Bespreek valkuilen, definitiekwesties, of fondsen die misschien niet passen vanw
 5. VOLGENDE STAPPEN
 Concrete prioritering: wat moet de klant als eerste aanvragen, welke deadlines zijn relevant, welke informatie moet nog worden verzameld.
 
-Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's. Gebruik GEEN HTML-tags in je antwoord. Gebruik GEEN markdown behalve [naam](url) voor links. Gebruik duidelijke kopjes in hoofdletters en lopende tekst.`;
+Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's.
+
+VERPLICHTE OPMAAKREGELS — volg deze EXACT:
+- Gebruik GEEN ##, **, *, of andere markdown-symbolen
+- Gebruik GEEN HTML-tags
+- Gebruik voor links ALLEEN dit formaat: [naam fonds](https://url.nl) — NIETS anders eromheen
+- Kopjes schrijf je in HOOFDLETTERS gevolgd door een witregel
+- Fondsnamen schrijf je op een eigen regel als: Naam Fonds — Specifieke Regeling
+- Daarna de URL op een eigen regel als: Website: [naam](url)
+${locatie.length > 0 && !locatie.includes('internationaal/buitenland') ? '- Het project is ALLEEN bedoeld voor Nederland. Sluit fondsen/regelingen specifiek voor internationaal werk of presentaties in het buitenland (zoals Mondriaanfonds Presentatie in het Buitenland) UIT.' : ''}
+- Maak de scan VOLLEDIG af — stop niet halverwege`;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -862,7 +883,7 @@ Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's. Gebruik 
         "anthropic-dangerous-direct-browser-access": "true",
         "x-api-key": apiKey
       },
-      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 4000, messages: [{ role: "user", content: prompt }] })
     });
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
@@ -880,40 +901,81 @@ Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's. Gebruik 
 }
 
 function formatResult(text) {
-  const HEADERS = ['PROFIEL','AANBEVOLEN','AANDACHT','KLEINE','VOLGENDE','SAMENVATTING','STAP'];
-
-  // Escape any raw HTML the AI might have output
-  function escapeHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // Strip markdown symbols the AI might output despite instructions
+  function stripMarkdown(line) {
+    line = line.replace(/^#{1,3}\s*/g, '');       // ## headers
+    line = line.replace(/\*\*([^*]+)\*\*/g, '$1'); // **bold**
+    line = line.replace(/\*([^*]+)\*/g, '$1');     // *italic*
+    line = line.replace(/^[-*]\s+/, '');           // leading - or *
+    return line.trim();
   }
 
-  // Convert markdown links [naam](url) to clickable <a> tags
+  // Make URLs clickable — only real URLs, nothing else
   function renderLinks(line) {
-    // First escape HTML so raw tags from AI don't render
-    line = escapeHtml(line);
-    // Convert [text](url) markdown links
-    line = line.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
-    // Convert bare URLs to clickable links
-    line = line.replace(/(https?:\/\/[^\s<&"]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
+    // Match [text](url)
+    line = line.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
+    // Match bare URLs
+    line = line.replace(/(https?:\/\/[^\s<>")\]]+)/g,
+      '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
     return line;
   }
 
+  const SECTION_HEADERS = ['1. PROFIEL', '2. AANBEVOLEN', '3. KLEINERE', '4. AANDACHT', '5. VOLGENDE',
+    'PROFIEL SAMENVATTING', 'AANBEVOLEN FONDSEN', 'KLEINERE STICHTINGEN', 'AANDACHTSPUNTEN', 'VOLGENDE STAPPEN'];
+
   let html = '';
-  for (let line of text.split('\n')) {
-    line = line.trim();
-    if (!line) { html += '<br>'; continue; }
-    if (HEADERS.some(h => line.toUpperCase().startsWith(h)) && line.length < 80) {
-      html += `<div class="section-header">${escapeHtml(line)}</div>`;
-    } else if (/^\d+\.\s/.test(line) && line.length < 120) {
-      html += `<div class="fonds-card"><h3>${renderLinks(line)}</h3>`;
-    } else if (line.toLowerCase().includes('let op') || line.includes('⚠️')) {
-      html += `<div class="warn-card"><h3>⚠️ Aandachtspunt</h3><p>${renderLinks(line.replace('⚠️','').trim())}</p></div>`;
-    } else if (line.startsWith('- ') || line.startsWith('• ')) {
-      html += `<p style="padding-left:1rem">→ ${renderLinks(line.substring(2))}</p>`;
-    } else {
-      html += `<p>${renderLinks(line)}</p>`;
+  let inFondsCard = false;
+
+  for (let rawLine of text.split('\n')) {
+    let line = stripMarkdown(rawLine);
+    if (!line) {
+      if (inFondsCard) { html += '</div>'; inFondsCard = false; }
+      html += '<br>';
+      continue;
     }
+
+    // Section headers
+    const isHeader = SECTION_HEADERS.some(h => line.toUpperCase().includes(h.toUpperCase())) && line.length < 80;
+    if (isHeader) {
+      if (inFondsCard) { html += '</div>'; inFondsCard = false; }
+      html += `<div class="section-header">${line}</div>`;
+      continue;
+    }
+
+    // Fonds name lines (bold fonds names the AI writes, e.g. "AFK — Projectsubsidie")
+    const isFondsTitle = /^[A-Z].{5,60}(—|--)/.test(line) && line.length < 100 && !line.includes('http');
+    if (isFondsTitle) {
+      if (inFondsCard) { html += '</div>'; inFondsCard = false; }
+      html += `<div class="fonds-card"><h3>${renderLinks(line)}</h3>`;
+      inFondsCard = true;
+      continue;
+    }
+
+    // Warning lines
+    if (line.includes('⚠️') || (line.toLowerCase().includes('let op') && line.length < 120)) {
+      if (inFondsCard) { html += '</div>'; inFondsCard = false; }
+      html += `<div class="warn-card"><p>⚠️ ${renderLinks(line.replace('⚠️','').trim())}</p></div>`;
+      continue;
+    }
+
+    // Website/URL lines — show as distinct link line
+    if (line.toLowerCase().startsWith('website:') || line.toLowerCase().startsWith('url:') || line.toLowerCase().startsWith('link:')) {
+      html += `<p style="margin:0.25rem 0 0.75rem 0;">${renderLinks(line)}</p>`;
+      continue;
+    }
+
+    // Bullet-like lines
+    if (rawLine.trim().startsWith('- ') || rawLine.trim().startsWith('• ')) {
+      html += `<p style="padding-left:1.25rem;margin:0.2rem 0;">→ ${renderLinks(line)}</p>`;
+      continue;
+    }
+
+    // Normal paragraph
+    html += `<p style="margin:0.4rem 0;">${renderLinks(line)}</p>`;
   }
+
+  if (inFondsCard) html += '</div>';
   return html;
 }
 
