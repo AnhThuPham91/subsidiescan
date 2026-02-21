@@ -903,21 +903,35 @@ ${locatie.length > 0 && !locatie.includes('internationaal/buitenland') ? '- Het 
 function formatResult(text) {
   // Strip markdown symbols the AI might output despite instructions
   function stripMarkdown(line) {
-    line = line.replace(/^#{1,3}\s*/g, '');       // ## headers
+    line = line.replace(/^#{1,3}\s*/g, '');        // ## headers
     line = line.replace(/\*\*([^*]+)\*\*/g, '$1'); // **bold**
     line = line.replace(/\*([^*]+)\*/g, '$1');     // *italic*
     line = line.replace(/^[-*]\s+/, '');           // leading - or *
+    // Remove leaked HTML attribute fragments like: " target="_blank" rel="noopener" style="...">text
+    line = line.replace(/["']?\s*target=["']_blank["']\s*rel=["']noopener["'][^>]*>[^<]*/g, '');
+    line = line.replace(/["']?\s*rel=["']noopener["'][^>]*>[^<]*/g, '');
     return line.trim();
   }
 
   // Make URLs clickable — only real URLs, nothing else
   function renderLinks(line) {
-    // Match [text](url)
-    line = line.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
-    // Match bare URLs
-    line = line.replace(/(https?:\/\/[^\s<>")\]]+)/g,
-      '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
+    // If the AI already output an <a> tag, strip it and extract just the URL and text
+    // Pattern: <a href="URL"...>text</a> — extract URL and text cleanly
+    line = line.replace(/<a\s+href="(https?:\/\/[^"]+)"[^>]*>([^<]*)<\/a>/g, 
+      '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$2 ↗</a>');
+    // Also handle unclosed tags: <a href="URL"...>text  (no closing tag, AI truncated)
+    line = line.replace(/<a\s+href="(https?:\/\/[^"]+)"[^>]*>([^<"]+)$/g,
+      '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$2 ↗</a>');
+    // Remove any leftover raw HTML attribute junk (target=, rel=, style=) that appears as plain text
+    line = line.replace(/"\s*target="_blank"\s*rel="noopener"\s*style="[^"]*">[^<\n]*/g, '');
+    // Match [text](url) — only if no <a> tag already present
+    if (!line.includes('<a ')) {
+      line = line.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
+      // Match bare URLs
+      line = line.replace(/(https?:\/\/[^\s<>")\]]+)/g,
+        '<a href="$1" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;">$1 ↗</a>');
+    }
     return line;
   }
 
