@@ -191,6 +191,13 @@
 
   <div id="formSection">
 
+    <!-- API KEY -->
+    <div class="form-card" style="border-color: #c9a7e8; background: linear-gradient(135deg, #faf8ff, #f5f0ff);">
+      <div class="section-title" style="margin-bottom:0.75rem;"><span class="num" style="background:var(--accent);">🔑</span> Jouw Anthropic API Key</div>
+      <p class="field-note" style="margin-bottom:0.75rem;">De tool heeft een API key nodig om Claude aan te roepen. Je key wordt <strong>alleen lokaal gebruikt</strong> en nooit opgeslagen. Haal je key op via <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--primary);">console.anthropic.com</a>.</p>
+      <input type="password" id="apiKey" placeholder="sk-ant-api03-..." style="font-family:monospace; font-size:0.82rem;">
+    </div>
+
     <!-- BLOK 1: Klantprofiel -->
     <div class="form-card">
       <div class="section-title"><span class="num">1</span> Klantprofiel</div>
@@ -451,7 +458,9 @@ let documentContext = '';
 // ── Website fetch ───────────────────────────────────────────────
 async function fetchWebsite() {
   const url = document.getElementById('portfolioUrl').value.trim();
+  const apiKey = document.getElementById('apiKey').value.trim();
   if (!url) { alert('Vul een URL in.'); return; }
+  if (!apiKey) { alert('Vul eerst je API key in bovenaan de pagina.'); return; }
   const status = document.getElementById('urlStatus');
   const preview = document.getElementById('urlPreview');
   const btn = document.getElementById('fetchBtn');
@@ -459,7 +468,7 @@ async function fetchWebsite() {
   preview.classList.remove('visible'); btn.disabled = true;
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST", headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      method: "POST", headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true", "x-api-key": apiKey },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514", max_tokens: 1000,
         messages: [{ role: "user", content: `Haal de belangrijkste informatie op van deze website voor een subsidiescan van een Nederlandse kunstenaar. URL: ${url}\n\nZoek naar:\n- Naam en discipline\n- Vertoningsgeschiedenis (filmfestivals, musea, galeries, kunstfestivals)\n- Specifieke festivals of instellingen (bijv. IDFA, Eye, Stedelijk Museum)\n- Of werk in kunst- of commerciële context verscheen\n- Prijzen, nominaties\n- Samenwerkingen, partners\n- Lopende projecten\n\nWees feitelijk en specifiek. Als je de site niet kunt bereiken, zeg dat eerlijk.` }]
@@ -494,6 +503,10 @@ function handleFileUpload(input) {
   preview.classList.remove('visible');
 
   const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) {
+    status.className = 'status-msg error'; status.textContent = '⚠️ Vul eerst je API key in bovenaan de pagina.'; return;
+  }
 
   if (isPDF) {
     // Read as ArrayBuffer, convert to base64 manually
@@ -513,7 +526,8 @@ function handleFileUpload(input) {
           headers: {
             "Content-Type": "application/json",
             "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true"
+            "anthropic-dangerous-direct-browser-access": "true",
+            "x-api-key": apiKey
           },
           body: JSON.stringify({
             model: "claude-sonnet-4-20250514",
@@ -608,6 +622,8 @@ function animateLoading() {
 // ── Generate scan ───────────────────────────────────────────────
 async function generateScan() {
   const naam = document.getElementById('naam').value.trim();
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { alert('Vul eerst je API key in bovenaan de pagina.'); return; }
   const regio = document.getElementById('regio').value.trim();
   const achtergrond = document.getElementById('achtergrond').value.trim();
   const projectOmschrijving = document.getElementById('projectOmschrijving').value.trim();
@@ -699,7 +715,8 @@ Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's. Geen mar
       headers: {
         "Content-Type": "application/json",
         "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
+        "anthropic-dangerous-direct-browser-access": "true",
+        "x-api-key": apiKey
       },
       body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
     });
