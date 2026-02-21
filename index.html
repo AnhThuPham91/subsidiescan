@@ -275,12 +275,12 @@
         <label>Projectplan, CV of portfolio uploaden of plakken</label>
         <p class="field-note">Upload een PDF of .txt bestand — de AI leest de volledige inhoud inclusief afbeeldingen en opmaak. Of klik op "Tekst plakken" om tekst handmatig in te voeren.</p>
 
-        <div class="upload-zone" id="uploadZone">
-          <input type="file" id="fileUpload" accept=".pdf,.txt,.md" onchange="handleFileUpload(this)">
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileUpload').click()">
           <div class="icon">📄</div>
           <strong>Klik om PDF of .txt te uploaden</strong>
           <p>of sleep een bestand hierheen — max 20MB</p>
         </div>
+        <input type="file" id="fileUpload" accept=".pdf,.txt,.md" onchange="handleFileUpload(this)" style="display:none">
         <span class="paste-toggle" onclick="togglePaste()">✏️ Liever tekst plakken (bijv. uit een PDF of Word)?</span>
         <div class="paste-area" id="pasteArea">
           <textarea id="pasteText" placeholder="Plak hier de inhoud van je projectplan, CV of portfolio..."></textarea>
@@ -588,7 +588,7 @@ zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
 zone.addEventListener('drop', e => {
   e.preventDefault(); zone.classList.remove('dragover');
   const file = e.dataTransfer.files[0];
-  if (file) { document.getElementById('fileUpload').files = e.dataTransfer.files; handleFileUpload({ files: e.dataTransfer.files }); }
+  if (file) handleFileUpload({ files: e.dataTransfer.files });
 });
 
 // ── Loading animation ───────────────────────────────────────────
