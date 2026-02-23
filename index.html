@@ -609,26 +609,68 @@ function updateRegioInfo(val) {
 
 // ── Fondsenlijst met rechtsvorm info ───────────────────────────
 const FONDSEN = [
+  // ── Film ──
   { naam: "Nederlands Filmfonds", focus: "film, documentaire, animatie, korte film", url: "https://www.filmfonds.nl", disciplines: ["film"], rechtsvormen: ["individuele kunstenaar (zzp)", "stichting", "bv/nv (commercieel)"] },
-  { naam: "Filmcommission NL", focus: "filmproductie en financiering", url: "https://filmcommission.nl/fund-financing/", disciplines: ["film"], rechtsvormen: ["individuele kunstenaar (zzp)", "stichting", "bv/nv (commercieel)"] },
-  { naam: "Stimuleringsfonds Creatieve Industrie", focus: "design, architectuur, digitale cultuur", url: "https://www.stimuleringsfonds.nl/subsidies", disciplines: ["design","architectuur","digitale cultuur"], rechtsvormen: ["individuele kunstenaar (zzp)", "stichting", "kunstenaarscollectief (informeel)"] },
-  { naam: "Mondriaanfonds — Werkbijdrage", focus: "beeldende kunst, fotografie — individuele kunstenaars", url: "https://www.mondriaanfonds.nl", disciplines: ["beeldende kunst","fotografie"], rechtsvormen: ["individuele kunstenaar (zzp)"], note: "Let op: 'kunstenaar'-definitie is streng. Filmmaker kwalificeert alleen als werk in kunstdomein is vertoond (museum, galerie, kunstfestival) — niet bij reguliere filmfestivalcategorie.", warn: true },
-  { naam: "Cultuurfonds", focus: "breed cultureel", url: "https://www.cultuurfonds.nl", disciplines: ["beeldende kunst","muziek","theater","dans","literatuur","fotografie","erfgoed","interdisciplinair","mode/textiel"], rechtsvormen: ["individuele kunstenaar (zzp)", "stichting", "vereniging", "kunstenaarscollectief (informeel)"] },
-  { naam: "Fonds ZOZ (Cultuurfonds)", focus: "polarisatie en radicalisering verminderen", url: "https://fondszoz.nl", disciplines: ["interdisciplinair","theater","muziek","beeldende kunst","film"], sociaal: "polarisatie/radicalisering", rechtsvormen: ["individuele kunstenaar (zzp)","stichting","vereniging"] },
-  { naam: "DNB Fonds (Cultuurfonds)", focus: "trans-Atlantisch slavernij erfgoed", url: "https://www.cultuurfonds.nl/fondsen/dnb-fonds", disciplines: ["beeldende kunst","theater","dans","literatuur","interdisciplinair","film"], sociaal: "trans-Atlantisch slavernij/erfgoed", rechtsvormen: ["individuele kunstenaar (zzp)","stichting","vereniging"] },
-  { naam: "VSBFonds", focus: "educatie en participatie", url: "https://www.vsbfonds.nl", disciplines: ["beeldende kunst","muziek","theater","dans","podiumkunsten"], rechtsvormen: ["stichting","vereniging","individuele kunstenaar (zzp)"] },
-  { naam: "Amsterdam Fonds voor de Kunsten (AFK)", focus: "Amsterdam-gebaseerde kunstenaars", url: "https://www.amsterdamsfondsvoordekunsten.nl", regio: "amsterdam", disciplines: ["beeldende kunst","muziek","theater","dans","film","literatuur","interdisciplinair","fotografie"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting","kunstenaarscollectief (informeel)"] },
+  { naam: "Filmcommission NL", focus: "feature film, animatie, documentaire financiering", url: "https://filmcommission.nl/fund-financing/", disciplines: ["film"], rechtsvormen: ["individuele kunstenaar (zzp)", "stichting", "bv/nv (commercieel)"] },
+  { naam: "Stichting Abraham Tuschinski Fonds", focus: "Nederlandse publieksfilms", url: "https://www.filmfonds.nl", disciplines: ["film"], rechtsvormen: ["stichting", "bv/nv (commercieel)"] },
+  // ── Stimuleringsfonds ──
+  { naam: "Stimuleringsfonds Creatieve Industrie", focus: "design, architectuur, digitale cultuur, vormgeving", url: "https://www.stimuleringsfonds.nl/subsidies", disciplines: ["design","architectuur","digitale cultuur"], rechtsvormen: ["individuele kunstenaar (zzp)", "stichting", "kunstenaarscollectief (informeel)"] },
+  // ── Mondriaanfonds ──
+  { naam: "Mondriaanfonds", focus: "beeldende kunst, fotografie — individuele kunstenaars", url: "https://www.mondriaanfonds.nl", disciplines: ["beeldende kunst","fotografie"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting"], note: "Let op: 'kunstenaar'-definitie is streng. Filmmaker kwalificeert alleen als werk in kunstdomein is vertoond.", warn: true },
+  // ── Cultuurfonds familie ──
+  { naam: "Cultuurfonds", focus: "breed cultureel, meerdere disciplines", url: "https://www.cultuurfonds.nl", disciplines: ["beeldende kunst","muziek","theater","dans","literatuur","fotografie","erfgoed","interdisciplinair","mode/textiel"], rechtsvormen: ["individuele kunstenaar (zzp)", "stichting", "vereniging", "kunstenaarscollectief (informeel)"] },
+  { naam: "Fonds ZOZ (Cultuurfonds)", focus: "polarisatie, radicalisering en extremisme verminderen", url: "https://fondszoz.nl", disciplines: ["interdisciplinair","theater","muziek","beeldende kunst","film"], sociaal: "polarisatie/radicalisering", rechtsvormen: ["individuele kunstenaar (zzp)","stichting","vereniging"] },
+  { naam: "DNB Fonds (Cultuurfonds)", focus: "trans-Atlantisch slavernij erfgoed, Caribisch Nederland", url: "https://www.cultuurfonds.nl/fondsen/dnb-fonds", disciplines: ["beeldende kunst","theater","dans","literatuur","interdisciplinair","film"], sociaal: "trans-Atlantisch slavernij/erfgoed", rechtsvormen: ["individuele kunstenaar (zzp)","stichting","vereniging"] },
+  { naam: "Cultuurfonds — Prins Bernhard Cultuurfonds", focus: "diverse disciplines, regionaal fonds", url: "https://www.cultuurfonds.nl/prins-bernhard-cultuurfonds", disciplines: ["beeldende kunst","muziek","theater","dans","literatuur","erfgoed","film"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting","vereniging","kunstenaarscollectief (informeel)"] },
+  // ── VSBFonds ──
+  { naam: "VSBFonds", focus: "educatie, participatie, cultuur", url: "https://www.vsbfonds.nl", disciplines: ["beeldende kunst","muziek","theater","dans","podiumkunsten","educatie/participatie"], rechtsvormen: ["stichting","vereniging","individuele kunstenaar (zzp)"] },
+  // ── AFK ──
+  { naam: "Amsterdam Fonds voor de Kunsten (AFK)", focus: "Amsterdam-gebaseerde kunstenaars, meerdere disciplines", url: "https://www.amsterdamsfondsvoordekunsten.nl", regio: "amsterdam", disciplines: ["beeldende kunst","muziek","theater","dans","film","literatuur","interdisciplinair","fotografie"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting","kunstenaarscollectief (informeel)"] },
+  // ── Prins Clausfonds ──
   { naam: "Prins Clausfonds", focus: "kunstenaars met niet-Europese culturele achtergrond", url: "https://princeclausfund.nl", disciplines: ["interdisciplinair","beeldende kunst","dans","muziek","theater","film"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting"] },
-  { naam: "Dioraphte", focus: "podiumkunsten, erfgoed, sociale initiatieven", url: "https://dioraphte.nl", disciplines: ["theater","dans","muziek","erfgoed","beeldende kunst","podiumkunsten"], rechtsvormen: ["stichting","vereniging"] },
+  // ── Dioraphte ──
+  { naam: "Dioraphte", focus: "podiumkunsten, erfgoed, sociale initiatieven Afrika/Nederland, wetenschap & onderzoek", url: "https://dioraphte.nl", disciplines: ["theater","dans","muziek","erfgoed","beeldende kunst","podiumkunsten"], rechtsvormen: ["stichting","vereniging"] },
+  // ── Voordekunst ──
   { naam: "Voordekunst (crowdfunding)", focus: "crowdfunding voor kunstenaars", url: "https://www.voordekunst.nl", disciplines: ["beeldende kunst","muziek","theater","dans","film","literatuur","interdisciplinair","mode/textiel"], rechtsvormen: ["individuele kunstenaar (zzp)","kunstenaarscollectief (informeel)","stichting"], type: "crowdfunding" },
-  { naam: "Fonds voor Cultuurparticipatie", focus: "participatie en educatie", url: "https://cultuurparticipatie.nl", disciplines: ["educatie/participatie","muziek","dans","theater","beeldende kunst"], rechtsvormen: ["stichting","vereniging"] },
-  { naam: "K.F. Hein Fonds", focus: "Utrecht regio", url: "https://kfhein.nl", regio: "utrecht", disciplines: ["beeldende kunst","muziek","theater","dans"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting","vereniging"] },
-  { naam: "TBI Klimaatterrein", focus: "klimaat & duurzaamheid, Amsterdam", url: "https://www.tbi-klimaattrein.nl", regio: "amsterdam", sociaal: "klimaat/duurzaamheid", disciplines: ["interdisciplinair","digitale cultuur","beeldende kunst"], rechtsvormen: ["stichting","vereniging","individuele kunstenaar (zzp)"] },
-  { naam: "Nationaal Digitaal Erfgoed", focus: "digitaal erfgoed", url: "https://netwerkdigitaalerfgoed.nl", disciplines: ["digitale cultuur","erfgoed"], rechtsvormen: ["stichting","vereniging","individuele kunstenaar (zzp)"] },
+  // ── Fonds voor Cultuurparticipatie ──
+  { naam: "Fonds voor Cultuurparticipatie", focus: "participatie, educatie, amateurkunst", url: "https://cultuurparticipatie.nl", disciplines: ["educatie/participatie","muziek","dans","theater","beeldende kunst"], rechtsvormen: ["stichting","vereniging"] },
+  // ── Regionaal ──
+  { naam: "K.F. Hein Fonds", focus: "kunstenaars en ontwerpers, Utrecht regio", url: "https://kfhein.nl", regio: "utrecht", disciplines: ["beeldende kunst","muziek","theater","dans","design"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting","vereniging"] },
+  { naam: "Elise Mathilde Fonds", focus: "sociaal, cultureel, groen — Rotterdam, Schiedam, Maassluis, Vlaardingen, Utrecht", url: "https://elisemathilde.nl", regio: "rotterdam", disciplines: ["beeldende kunst","theater","interdisciplinair","educatie/participatie"], rechtsvormen: ["stichting","vereniging"] },
   { naam: "Stroom Den Haag", focus: "beeldende kunst Den Haag", url: "https://stroom.nl", regio: "den haag", disciplines: ["beeldende kunst","fotografie","digitale cultuur"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting"] },
   { naam: "CBK Rotterdam", focus: "beeldende kunst Rotterdam", url: "https://cbk.nl", regio: "rotterdam", disciplines: ["beeldende kunst","fotografie","interdisciplinair"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting"] },
-  { naam: "Cultuurfonds — Prins Bernhard Cultuurfonds", focus: "diverse disciplines, regionaal fonds", url: "https://www.cultuurfonds.nl/prins-bernhard-cultuurfonds", disciplines: ["beeldende kunst","muziek","theater","dans","literatuur","erfgoed","film"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting","vereniging","kunstenaarscollectief (informeel)"] },
+  { naam: "Noodfonds Amsterdam", focus: "noodsteun voor kunstenaars in Amsterdam", url: "https://noodfondsamsterdam.nl", regio: "amsterdam", disciplines: ["beeldende kunst","muziek","theater","dans","interdisciplinair"], rechtsvormen: ["individuele kunstenaar (zzp)"] },
   { naam: "W139", focus: "experimentele beeldende kunst Amsterdam", url: "https://w139.nl", regio: "amsterdam", disciplines: ["beeldende kunst","interdisciplinair","film"], rechtsvormen: ["individuele kunstenaar (zzp)","kunstenaarscollectief (informeel)"] },
+  // ── Digitaal & erfgoed ──
+  { naam: "Nationaal Digitaal Erfgoed", focus: "digitaal erfgoed", url: "https://netwerkdigitaalerfgoed.nl/subsidies-en-fondsen/", disciplines: ["digitale cultuur","erfgoed"], rechtsvormen: ["stichting","vereniging","individuele kunstenaar (zzp)"] },
+  { naam: "Cultuurloket DigitALL", focus: "digitale transformatie in cultuur", url: "https://cultuurloketdigitall.nl", disciplines: ["digitale cultuur","interdisciplinair"], rechtsvormen: ["stichting","vereniging","individuele kunstenaar (zzp)"] },
+  // ── TBI ──
+  { naam: "TBI Klimaatterrein", focus: "klimaat, natuur en duurzaamheid — Amsterdam", url: "https://www.tbi-klimaattrein.nl", regio: "amsterdam", sociaal: "klimaat/duurzaamheid", disciplines: ["interdisciplinair","digitale cultuur","beeldende kunst"], rechtsvormen: ["stichting","vereniging","individuele kunstenaar (zzp)"] },
+  // ── Stichting DOEN ──
+  { naam: "Stichting DOEN", focus: "sociale en culturele vernieuwing, natuur en klimaat", url: "https://www.doen.nl", disciplines: ["interdisciplinair","theater","beeldende kunst","muziek","dans"], sociaal: "sociaal-maatschappelijk", rechtsvormen: ["stichting","vereniging"] },
+  // ── Stichting Stokroos ──
+  { naam: "Stichting Stokroos", focus: "beeldend kunstenaars, vormgevers en ambachtsbeoefenaars — 3 tot 8 jaar actief", url: "https://stokroos.nl/home", disciplines: ["beeldende kunst","design","mode/textiel"], rechtsvormen: ["individuele kunstenaar (zzp)"], note: "Alleen voor kunstenaars die 3–8 jaar actief zijn. Niet voor starters of gevestigde namen." },
+  // ── Fonds 21 ──
+  { naam: "Fonds 21", focus: "kunst & cultuur, jongeren & maatschappij, kunst & educatie", url: "https://www.fonds21.nl", disciplines: ["beeldende kunst","theater","muziek","dans","educatie/participatie","interdisciplinair"], rechtsvormen: ["stichting","vereniging","bv/nv (commercieel)"], note: "Niet voor zzp-ers. Alleen stichtingen, verenigingen, BV of NV.", warn: true },
+  // ── Niemeijer fonds ──
+  { naam: "Stichting Niemeijer Fonds", focus: "kunstenaars aan het begin van carrière of nieuwe ontwikkeling, artist in residency, soloproject", url: "https://www.stichtingniemeijerfonds.nl", disciplines: ["beeldende kunst","fotografie","interdisciplinair","muziek","theater"], rechtsvormen: ["individuele kunstenaar (zzp)"] },
+  // ── Amarte Fonds ──
+  { naam: "Amarte Fonds", focus: "muziek, film, theater, beeldende kunst, literatuur, interdisciplinair", url: "https://www.amarte.nl/nl", disciplines: ["muziek","film","theater","beeldende kunst","literatuur","interdisciplinair"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting"] },
+  // ── NPO Fonds ──
+  { naam: "NPO Fonds", focus: "video, audio, talentontwikkeling, impactontwikkeling", url: "https://npo.nl/npofonds", disciplines: ["film","digitale cultuur","muziek"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting","bv/nv (commercieel)"] },
+  // ── VandenEnde Foundation ──
+  { naam: "VandenEnde Foundation", focus: "jong talent — beurzen voor opleidingen en cursussen, ondernemerschap in cultuur", url: "https://www.vandenende-foundation.org", disciplines: ["theater","dans","muziek","podiumkunsten","interdisciplinair"], rechtsvormen: ["individuele kunstenaar (zzp)","stichting"] },
+  // ── Blockbusterfonds ──
+  { naam: "Blockbusterfonds", focus: "tentoonstellingen met groot publieksbereik", url: "https://www.blockbusterfonds.nl", disciplines: ["beeldende kunst","erfgoed","fotografie","interdisciplinair"], rechtsvormen: ["stichting","vereniging"] },
+  // ── Fondskwadraat ──
+  { naam: "Fondskwadraat", focus: "rentevrije leningen onder €8.000 voor culturele initiatieven", url: "https://www.fondskwadraat.nl", disciplines: ["beeldende kunst","muziek","theater","dans","interdisciplinair","design"], rechtsvormen: ["individuele kunstenaar (zzp)","kunstenaarscollectief (informeel)"], type: "lening" },
+  // ── Jonge kunstenaars ──
+  { naam: "Stichting Oscar Maarsman", focus: "jonge kunstenaars", url: "https://www.oscarmaarsman.nl", disciplines: ["beeldende kunst","interdisciplinair","design"], rechtsvormen: ["individuele kunstenaar (zzp)"] },
+  { naam: "Heij Konijn Fonds", focus: "jonge kunstenaars, max €2.500", url: "https://heijkonijn.nl", disciplines: ["beeldende kunst","interdisciplinair"], rechtsvormen: ["individuele kunstenaar (zzp)","kunstenaarscollectief (informeel)"] },
+  // ── Ammodo ──
+  { naam: "Ammodo Art", focus: "internationaal toonaangevende beeldende kunst en podiumkunst", url: "https://www.ammodo-art.org", disciplines: ["beeldende kunst","dans","theater","muziek","podiumkunsten"], rechtsvormen: ["stichting","vereniging"] },
+  // ── Gieskes-Strijbis ──
+  { naam: "Gieskes-Strijbis Fonds", focus: "natuur/milieu, kunst en cultuur, democratie/rechtsstaat, medisch onderzoek", url: "https://www.gieskesstrijbisfonds.nl", disciplines: ["beeldende kunst","theater","interdisciplinair","erfgoed"], sociaal: "sociaal-maatschappelijk", rechtsvormen: ["stichting","vereniging"] },
 ];
 
 // ── Context storage ─────────────────────────────────────────────
@@ -853,6 +895,7 @@ async function generateScan() {
     if (f.regio && regioLower.includes(f.regio)) score += 5;
     if (f.sociaal && sociaal.includes(f.sociaal)) score += 6;
     if (typeProject.includes('crowdfunding') && f.type === 'crowdfunding') score += 6;
+    if (typeProject.includes('crowdfunding') && f.type === 'lening') score += 4;
     if (achtergrond && f.naam.includes('Prins Clausfonds')) score += 4;
     if (rechtsvorm.length > 0) {
       const compatible = f.rechtsvormen?.some(r => rechtsSet.has(r));
@@ -862,7 +905,7 @@ async function generateScan() {
     return { ...f, score };
   }).filter(f => f.score > 0).sort((a,b) => b.score - a.score);
 
-  const topFondsen = scored.slice(0, 6);
+  const topFondsen = scored.slice(0, 8);
   const fondsInfo = topFondsen.map((f,i) => `${i+1}. ${f.naam} — ${f.focus} — ${f.url}${f.note ? '\n   ⚠️ Let op: ' + f.note : ''}\n   Geschikt voor: ${f.rechtsvormen?.join(', ')}`).join('\n\n');
 
   const regioKey = Object.keys(REGIO_FONDSEN).find(k => regioLower.includes(k));
@@ -895,7 +938,7 @@ ${regWarnings.length > 0 ? `\n⚠️ KRITIEKE REGLEMENTSCONTROLE — VERPLICHT M
 ${websiteContext ? `WEBSITE/PORTFOLIO ANALYSE:\n${websiteContext}\n` : ''}
 ${documentContext ? `PROJECTPLAN / DOCUMENT:\n${documentContext}\n` : ''}
 
-VOORGESELECTEERDE FONDSEN (gematcht op discipline, rechtsvorm en regio):
+VOORGESELECTEERDE FONDSEN (gematcht op discipline, rechtsvorm en regio — uit database van 36 fondsen):
 ${fondsInfo}
 
 REGIONALE AANVULLINGEN:
@@ -917,7 +960,7 @@ Website: https://url.nl
 - Regeling: [exacte naam van de regeling]
 - Deadline: [indien bekend, anders: doorlopend / check website]
 - Fase: [welke projectfase past bij deze regeling]
-- Budgetplafond: [max bedrag van deze regeling]
+- Bedrag: min. €[minimumbedrag] — max. €[maximumbedrag van deze regeling]
 - Risico: [1-2 risico's als korte bullets]
 
 2. KLEINERE & LOKALE FONDSEN
