@@ -477,18 +477,12 @@ async function startCrawl() {
     log(`Starten Apify crawl voor: ${startUrl}`);
 
     const runResp = await fetch(
-      `https://api.apify.com/v2/acts/apify~website-content-crawler/runs?token=${apifyToken}`,
+      `https://api.apify.com/v2/acts/thu1710~my-actor/runs?token=${apifyToken}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          startUrls: [{ url: startUrl }],
-          maxCrawlDepth: maxDepth,
-          maxCrawlPages: maxPages,
-          saveMarkdown: true,
-          removeCookieWarnings: true,
-          blockMedia: true,
-          saveContentTypes: 'application/pdf'
+          startUrls: [{ url: startUrl }]
         })
       }
     );
