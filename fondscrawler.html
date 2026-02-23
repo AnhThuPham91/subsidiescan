@@ -661,6 +661,12 @@ Focus sterk op:
 - harde criteria
 - uitsluitingscriteria (heel belangrijk)
 
+Extractieregels:
+- Zoek expliciet naar woorden: "opent", "open", "sluit", "gesloten", "deadline", "indienen", "aanvraagperiode".
+- Zoek expliciet naar bedragen met € en woorden: "budget", "subsidiebedrag", "maximaal", "minimum".
+- Als je een bedrag ziet dat een totaalbudget lijkt (bijv. "€ 650.000 budget subsidietijdvak"), zet dit NIET als max_bedrag tenzij de bron zegt dat dit het max per aanvraag is.
+- Als openstelling/deadline alleen als "opent 25 februari 15:00" staat, zet dat exact zo in deadline/openstelling.
+
 Geef uitsluitend JSON output — geen uitleg, geen markdown buiten de JSON, geen commentaar.
 Begin direct met { en eindig met }.
 
