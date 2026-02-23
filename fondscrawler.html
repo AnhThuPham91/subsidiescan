@@ -427,6 +427,12 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function stripHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
 function setStep(n, state, detail = '') {
   const step = document.getElementById(`step${n}`);
   const spin = document.getElementById(`spin${n}`);
@@ -559,8 +565,8 @@ async function startCrawl() {
 
     // Build bundle text
     const bundle = allFiltered.map((item, i) => {
-      const content = item.markdown || item.text || item.pageContent || '';
-      const truncated = content.substring(0, 4000);
+      const content = item.markdown || item.text || item.pageContent || item.html || '';
+      const truncated = stripHtml(content).substring(0, 4000);
       return `--- BRON ${i+1}: ${item.url} ---\n${truncated}`;
     }).join('\n\n');
 
