@@ -330,16 +330,44 @@
       </div>
 
       <div class="field">
-        <label>Type activiteit</label>
-        <div class="tag-group" id="typeTags">
-          <span class="tag" data-val="nieuw werk maken">Nieuw werk</span>
-          <span class="tag" data-val="presentatie/tentoonstelling">Presentatie</span>
+        <label>Primair doel van het project</label>
+        <div class="tag-group" id="doelTags">
+          <span class="tag" data-val="artistieke ontwikkeling">Artistieke ontwikkeling</span>
+          <span class="tag" data-val="publieksbereik">Publieksbereik</span>
           <span class="tag" data-val="onderzoek">Onderzoek</span>
-          <span class="tag" data-val="educatie/participatie">Educatie / Participatie</span>
-          <span class="tag" data-val="internationale samenwerking">Internationaal</span>
-          <span class="tag" data-val="community/sociaal">Community / Sociaal</span>
-          <span class="tag" data-val="digitaal/technologie">Digitaal / Tech</span>
-          <span class="tag" data-val="crowdfunding">Crowdfunding</span>
+          <span class="tag" data-val="educatie">Educatie</span>
+          <span class="tag" data-val="participatie">Participatie</span>
+          <span class="tag" data-val="internationale samenwerking">Internationale samenwerking</span>
+          <span class="tag" data-val="talentontwikkeling">Talentontwikkeling</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Type activiteit</label>
+        <p class="field-note" style="margin-bottom:0.6rem;">Artistiek</p>
+        <div class="tag-group" id="typeArtistiekTags" style="margin-bottom:0.75rem;">
+          <span class="tag" data-val="tentoonstelling">Tentoonstelling</span>
+          <span class="tag" data-val="performance">Performance</span>
+          <span class="tag" data-val="installatie">Installatie</span>
+          <span class="tag" data-val="filmproductie">Filmproductie</span>
+          <span class="tag" data-val="publicatie/boek">Publicatie / boek</span>
+          <span class="tag" data-val="digitale productie">Digitale productie</span>
+          <span class="tag" data-val="architectonisch ontwerp">Architectonisch ontwerp</span>
+          <span class="tag" data-val="prototype">Prototype</span>
+        </div>
+        <p class="field-note" style="margin-bottom:0.6rem;">Participatief</p>
+        <div class="tag-group" id="typeParticipatTags" style="margin-bottom:0.75rem;">
+          <span class="tag" data-val="workshop">Workshop</span>
+          <span class="tag" data-val="educatief programma">Educatief programma</span>
+          <span class="tag" data-val="community project">Community project</span>
+          <span class="tag" data-val="publiek participatie traject">Publiek participatie traject</span>
+        </div>
+        <p class="field-note" style="margin-bottom:0.6rem;">Onderzoek</p>
+        <div class="tag-group" id="typeOnderzoekTags">
+          <span class="tag" data-val="artistiek onderzoek">Artistiek onderzoek</span>
+          <span class="tag" data-val="stedelijk onderzoek">Stedelijk onderzoek</span>
+          <span class="tag" data-val="materiaalonderzoek">Materiaalonderzoek</span>
+          <span class="tag" data-val="archiefonderzoek">Archiefonderzoek</span>
         </div>
       </div>
 
@@ -366,14 +394,19 @@
       </div>
 
       <div class="field">
-        <label>Heb je eerder subsidie ontvangen van: <span class="sublabel">— de scan houdt hier rekening mee per specifieke regeling</span></label>
-        <div class="tag-group" id="ontvangenTags" style="margin-bottom:0.5rem;">
-          <span class="tag" data-val="Stimuleringsfonds — Talentontwikkeling (⚠️ blokkeert alle andere Stimuleringsfonds regelingen)">Stimuleringsfonds Talentontwikkeling ⚠️</span>
-          <span class="tag" data-val="Mondriaanfonds">Mondriaanfonds</span>
-          <span class="tag" data-val="Gemeente subsidie">Gemeente</span>
-          <span class="tag" data-val="geen eerdere subsidies ontvangen">Nee</span>
+        <label>Heb je eerder subsidie ontvangen van: <span class="sublabel">— selecteer alles wat van toepassing is</span></label>
+        <div class="tag-group" id="ontvangenTags" style="margin-bottom:0.7rem;">
+          <span class="tag" data-val="Stimuleringsfonds" data-fonds="Stimuleringsfonds">Stimuleringsfonds</span>
+          <span class="tag" data-val="Mondriaanfonds" data-fonds="Mondriaanfonds">Mondriaanfonds</span>
+          <span class="tag" data-val="Fonds Podiumkunsten" data-fonds="Fonds Podiumkunsten">Fonds Podiumkunsten</span>
+          <span class="tag" data-val="Filmfonds" data-fonds="Filmfonds">Filmfonds</span>
+          <span class="tag" data-val="Nederlands Letterenfonds" data-fonds="Nederlands Letterenfonds">Nederlands Letterenfonds</span>
+          <span class="tag" data-val="Fonds voor Cultuurparticipatie" data-fonds="Fonds voor Cultuurparticipatie">Fonds voor Cultuurparticipatie</span>
+          <span class="tag" data-val="Gemeente subsidie" data-fonds="Gemeente">Gemeente</span>
+          <span class="tag" data-val="geen eerdere subsidies" data-fonds="">Nee</span>
         </div>
-        <input type="text" id="ontvangenAndere" placeholder="Anders: bijv. AFK Projectsubsidie, Filmfonds DocLab...">
+        <div id="regelingInputs" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.5rem;"></div>
+        <input type="text" id="ontvangenAndere" placeholder="Anders: bijv. AFK, VSBFonds, Cultuurfonds...">
       </div>
 
       <div class="field">
@@ -425,6 +458,35 @@ document.querySelectorAll('.tag-group').forEach(group => {
     tag.addEventListener('click', () => tag.classList.toggle('selected'));
   });
 });
+
+// ── Ontvangen fondsen: toon regeling-invoer per geselecteerd fonds ──
+document.querySelectorAll('#ontvangenTags .tag').forEach(tag => {
+  tag.addEventListener('click', () => {
+    updateRegelingInputs();
+  });
+});
+function updateRegelingInputs() {
+  const container = document.getElementById('regelingInputs');
+  container.innerHTML = '';
+  document.querySelectorAll('#ontvangenTags .tag.selected').forEach(tag => {
+    const fonds = tag.dataset.fonds;
+    if (!fonds) return; // "Nee" tag
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:0.5rem;';
+    const lbl = document.createElement('span');
+    lbl.textContent = fonds + ':';
+    lbl.style.cssText = 'font-size:0.78rem;font-weight:600;color:var(--primary);white-space:nowrap;min-width:160px;';
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = 'Welke regeling? bijv. Talentontwikkeling, Werkbijdrage...';
+    inp.dataset.fonds = fonds;
+    inp.id = 'regeling_' + fonds.replace(/\s/g,'_');
+    inp.style.cssText = 'flex:1;padding:0.45rem 0.75rem;font-size:0.82rem;';
+    wrap.appendChild(lbl);
+    wrap.appendChild(inp);
+    container.appendChild(wrap);
+  });
+}
 
 function getSelected(id) {
   return [...document.querySelectorAll(`#${id} .tag.selected`)].map(t => t.dataset.val);
@@ -753,12 +815,23 @@ async function generateScan() {
   const disciplines = getSelected('disciplineTags');
   const fase = getSelected('faseTags');
   const faseProj = getSelected('faseProjTags');
-  const typeProject = getSelected('typeTags');
+  const doel = getSelected('doelTags');
+  const typeArtistiek = getSelected('typeArtistiekTags');
+  const typeParticipat = getSelected('typeParticipatTags');
+  const typeOnderzoek = getSelected('typeOnderzoekTags');
+  const typeProject = [...typeArtistiek, ...typeParticipat, ...typeOnderzoek];
   const locatie = getSelected('locatieTags');
   const sociaal = getSelected('sociaalTags');
   const bedrag = getSelected('bedragTags');
   const ontvangenFondsen = getSelected('ontvangenTags');
-  const alleOntvangen = [...ontvangenFondsen, ...(ontvangenAndere ? ontvangenAndere.split(',').map(s => s.trim()) : [])].filter(Boolean);
+  // Collect regeling per fonds
+  const regelingPerFonds = [];
+  document.querySelectorAll('#regelingInputs input').forEach(inp => {
+    const fonds = inp.dataset.fonds;
+    const regeling = inp.value.trim();
+    regelingPerFonds.push(fonds + (regeling ? ` — ${regeling}` : ''));
+  });
+  const alleOntvangen = [...regelingPerFonds, ...(ontvangenAndere ? ontvangenAndere.split(',').map(s => s.trim()) : [])].filter(Boolean);
   if (!projectOmschrijving && disciplines.length === 0) { alert('Vul minimaal een projectomschrijving of discipline in.'); return; }
 
   document.getElementById('formSection').style.display = 'none';
@@ -798,7 +871,7 @@ async function generateScan() {
   // Get official reglement knowledge and warnings
   const { warnings: regWarnings, relevant: regRelevant } = getReglementsContext(alleOntvangen, disciplines);
 
-  const prompt = `Je bent een gespecialiseerde subsidieadviseur voor kunstenaars in Nederland. Schrijf een professionele, grondige subsidiescan in het Nederlands.
+  const prompt = `Je bent een gespecialiseerde subsidieadviseur voor kunstenaars in Nederland. Schrijf een professionele subsidiescan in het Nederlands.
 
 KLANTPROFIEL:
 - Naam: ${naam || 'niet opgegeven'}
@@ -808,13 +881,14 @@ KLANTPROFIEL:
 - Woonplaats: ${regio || 'niet opgegeven'}
 - Culturele achtergrond: ${achtergrond || 'niet opgegeven'}
 - Projectomschrijving: ${projectOmschrijving || 'niet opgegeven'}
+- Primair doel: ${doel.join(', ') || 'niet opgegeven'}
 - Projectfase: ${faseProj.join(', ') || 'niet opgegeven'}
 - Type activiteit: ${typeProject.join(', ') || 'niet opgegeven'}
 - Presentatielocatie: ${locatie.join(', ') || 'niet opgegeven'}
 - Maatschappelijke focus: ${sociaal.join(', ') || 'geen'}
 - Gevraagd bedrag: ${bedrag.join(', ') || 'onbekend'}
 - Extra context: ${extraContext || 'geen'}
-${alleOntvangen.length > 0 ? `\nAL ONTVANGEN / AANGEVRAAGD / AFGEWEZEN (specifieke regelingen):\n${alleOntvangen.join('\n')}` : ''}
+${alleOntvangen.length > 0 ? `\nEERDER ONTVANGEN SUBSIDIES:\n${alleOntvangen.join('\n')}` : ''}
 
 ${regWarnings.length > 0 ? `\n⚠️ KRITIEKE REGLEMENTSCONTROLE — VERPLICHT MEENEMEN:\n${regWarnings.join('\n')}\n` : ''}
 
@@ -825,40 +899,42 @@ VOORGESELECTEERDE FONDSEN (gematcht op discipline, rechtsvorm en regio):
 ${fondsInfo}
 
 REGIONALE AANVULLINGEN:
-${regioExtra || 'Geen specifieke regiofondsen gevonden — adviseer de klant om bij de gemeente te informeren naar cultuursubsidies.'}
+${regioExtra || 'Geen specifieke regiofondsen gevonden.'}
 
-${regRelevant.length > 0 ? `\nOFFICIËLE REGLEMENTSKENNIS (gebaseerd op officiële regelingen 2025-2028 — gebruik deze exacte informatie bij het bespreken van deze fondsen):\n\n${regRelevant.join('\n\n---\n\n')}` : ''}
+${regRelevant.length > 0 ? `\nOFFICIËLE REGLEMENTSKENNIS (2025-2028):\n\n${regRelevant.join('\n\n---\n\n')}` : ''}
 
 OPDRACHT:
-Schrijf een complete subsidiescan met de volgende structuur. Gebruik voor elke URL het formaat: [naam](url) zodat links klikbaar zijn.
+Schrijf de scan ZONDER profielsamenvatting. Begin direct met sectie 1.
 
-1. PROFIEL SAMENVATTING
-Beschrijf wie de klant is, wat het project inhoudt, en wat je hebt opgemaakt uit het document of de website (indien aanwezig).
-
-2. AANBEVOLEN FONDSEN
-Voor elk fonds schrijf je EXACT in dit formaat (geen afwijkingen):
+1. AANBEVOLEN FONDSEN
+Geef per fonds een GESTRUCTUREERDE KORTE OUTPUT. Gebruik EXACT dit formaat voor elk fonds, geen afwijkingen:
 
 Naam Fonds — Specifieke Regeling
-Website: https://directe-url-naar-regeling.nl
-Waarom passend: [2-3 zinnen waarom dit past]
-Criteria: [2-3 voornaamste criteria van deze specifieke regeling]
-Aanvraagtip: [1 concrete tip]
+Match score: [XX%]
+Website: https://url.nl
+- Disciplines: [welke disciplines passen]
+- Regio: [alleen indien relevant]
+- Regeling: [exacte naam van de regeling]
+- Deadline: [indien bekend, anders: doorlopend / check website]
+- Fase: [welke projectfase past bij deze regeling]
+- Budgetplafond: [max bedrag van deze regeling]
+- Risico: [1-2 risico's als korte bullets]
 
-3. KLEINERE STICHTINGEN & LOKALE FONDSEN
-Gebruik hetzelfde formaat als bij sectie 2. Noem minimaal 3 concrete fondsen, ook buiten de vaste lijst.
+2. KLEINERE & LOKALE FONDSEN
+Gebruik hetzelfde formaat. Minimaal 3 fondsen.
 
-4. AANDACHTSPUNTEN & DEFINITIEKWESTIES
-Schrijf dit als korte punten, elk op een nieuwe regel, beginnend met een streepje (-). Maximaal 6 punten. Geen lange alinea's.
+3. AANDACHTSPUNTEN & DEFINITIEKWESTIES
+- [punt 1]
+- [punt 2]
+(maximaal 6 korte punten, geen alinea's)
 
-Toon: professioneel maar toegankelijk. Eerlijk over kansen en risico's.
-
-VERPLICHTE OPMAAKREGELS — volg deze EXACT:
+VERPLICHTE OPMAAKREGELS:
 - Gebruik GEEN ##, **, *, of andere markdown-symbolen
 - Gebruik GEEN HTML-tags
-- Schrijf URLs ALTIJD als platte tekst: https://www.voorbeeld.nl — GEEN [naam](url) formaat, GEEN <a> tags
-- Kopjes schrijf je in HOOFDLETTERS
-- Focus ALLEEN op fondsen en regelingen die in 2026 open zijn of opengaan — noem geen gestopte regelingen
-${locatie.length > 0 && !locatie.includes('internationaal/buitenland') ? '- Het project is alleen voor Nederland. Sluit internationale regelingen (zoals Mondriaanfonds Presentatie Buitenland) UIT.' : ''}
+- Schrijf URLs als platte tekst: https://www.voorbeeld.nl
+- Kopjes in HOOFDLETTERS
+- Alleen fondsen en regelingen die in 2026 open zijn
+${locatie.length > 0 && !locatie.includes('internationaal/buitenland') ? '- Project is alleen voor Nederland — sluit internationale regelingen UIT' : ''}
 - Maak de scan volledig af`;
 
   try {
@@ -913,8 +989,8 @@ function formatResult(text) {
     return line;
   }
 
-  const SECTION_HEADERS = ['1. PROFIEL', '2. AANBEVOLEN', '3. KLEINERE', '4. AANDACHT', '5. VOLGENDE',
-    'PROFIEL SAMENVATTING', 'AANBEVOLEN FONDSEN', 'KLEINERE STICHTINGEN', 'AANDACHTSPUNTEN', 'VOLGENDE STAPPEN'];
+  const SECTION_HEADERS = ['AANBEVOLEN FONDSEN', 'KLEINERE', 'AANDACHTSPUNTEN', 'VOLGENDE STAPPEN',
+    '1. AANBEVOLEN', '2. KLEINERE', '3. AANDACHT'];
 
   let html = '';
   let inFondsCard = false;
@@ -948,6 +1024,15 @@ function formatResult(text) {
     if (line.includes('⚠️') || (line.toLowerCase().includes('let op') && line.length < 120)) {
       if (inFondsCard) { html += '</div>'; inFondsCard = false; }
       html += `<div class="warn-card"><p>⚠️ ${renderLinks(line.replace('⚠️','').trim())}</p></div>`;
+      continue;
+    }
+
+    // Match score line
+    if (line.toLowerCase().startsWith('match score:') || line.toLowerCase().startsWith('match:')) {
+      const scoreMatch = line.match(/(\d+)%/);
+      const score = scoreMatch ? parseInt(scoreMatch[1]) : null;
+      const color = score ? (score >= 80 ? '#2a9d5c' : score >= 60 ? '#e07c1a' : '#b04040') : 'var(--primary)';
+      html += `<p style="margin:0.15rem 0 0.5rem 0;font-weight:700;font-size:0.88rem;color:${color};">🎯 ${line}</p>`;
       continue;
     }
 
@@ -989,6 +1074,8 @@ function resetForm() {
   });
   // Deselect all tags
   document.querySelectorAll('.tag.selected').forEach(t => t.classList.remove('selected'));
+  // Clear regeling sub-inputs
+  document.getElementById('regelingInputs').innerHTML = '';
   // Clear context
   websiteContext = ''; documentContext = '';
   // Reset upload status messages
