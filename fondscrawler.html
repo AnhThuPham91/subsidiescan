@@ -299,6 +299,14 @@
           <button class="key-toggle" onclick="toggleKey('claudeApiKey', this)">toon</button>
         </div>
       </div>
+
+      <div class="field">
+        <label>SerpAPI Key</label>
+        <div class="key-row">
+          <input type="password" id="serpApiKey" placeholder="serpapi_key_...">
+          <button class="key-toggle" onclick="toggleKey('serpApiKey', this)">toon</button>
+        </div>
+      </div>
     </div>
 
     <!-- URL + settings -->
@@ -433,6 +441,31 @@ function stripHtml(html) {
   return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
+async function searchWithSerpApi(domain, serpApiKey) {
+  const queries = [
+    `site:${domain} regeling`,
+    `site:${domain} subsidie`,
+    `site:${domain} deadline`,
+    `site:${domain} hoogte aanvraagbedrag`,
+    `site:${domain} opent sluit`
+  ];
+  const urls = new Set();
+  for (const q of queries) {
+    const resp = await fetch(
+      `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(q)}&api_key=${serpApiKey}&num=10`
+    );
+    if (!resp.ok) continue;
+    const data = await resp.json();
+    const results = data.organic_results || [];
+    results.forEach(r => {
+      if (r.link && r.link.includes(domain)) {
+        urls.add(r.link);
+      }
+    });
+  }
+  return Array.from(urls).slice(0, 15);
+}
+
 function setStep(n, state, detail = '') {
   const step = document.getElementById(`step${n}`);
   const spin = document.getElementById(`spin${n}`);
@@ -479,7 +512,15 @@ async function startCrawl() {
 
   try {
     // ── STEP 1: Start Apify run ─────────────────────────────────
-    setStep(1, 'active', 'Actor starten...');
+    setStep(1, 'active', 'Zoeken via SerpAPI...');
+    const serpApiKey = document.getElementById('serpApiKey').value.trim();
+    if (!serpApiKey) throw new Error('Vul je SerpAPI key in.');
+    log('SerpAPI zoekopdrachten uitvoeren...');
+    const domain = new URL(startUrl).hostname;
+    const serpUrls = await searchWithSerpApi(domain, serpApiKey);
+    log(`${serpUrls.length} relevante URLs gevonden via SerpAPI`, 'ok');
+
+    setStep(1, 'active', 'Apify actor starten...');
     log(`Starten Apify crawl voor: ${startUrl}`);
 
     const runResp = await fetch(
@@ -488,7 +529,7 @@ async function startCrawl() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          startUrls: [{ url: startUrl }]
+          startUrls: serpUrls.map(u => ({ url: u }))
         })
       }
     );
