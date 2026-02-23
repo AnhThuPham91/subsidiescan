@@ -563,11 +563,14 @@ async function startCrawl() {
     // ── STEP 4: Send to Claude ──────────────────────────────────
     setStep(4, 'active', 'Prompt opbouwen en versturen...');
 
-    // Build bundle text
+    // Build bundle text (longer + safer)
+    const MAX_CHARS_PER_SOURCE = 10000; // was 4000
     const bundle = allFiltered.map((item, i) => {
-      const content = item.markdown || item.text || item.pageContent || item.html || '';
-      const truncated = stripHtml(content).substring(0, 4000);
-      return `--- BRON ${i+1}: ${item.url} ---\n${truncated}`;
+      const raw = item.markdown || item.text || item.pageContent || item.html || '';
+      const plain = stripHtml(raw);
+      // keep some context even if empty
+      const truncated = (plain || '').substring(0, MAX_CHARS_PER_SOURCE);
+      return `--- BRON ${i + 1}: ${item.url} ---\n${truncated}`;
     }).join('\n\n');
 
     log(`Bundle grootte: ~${Math.round(bundle.length/1000)}k tekens`);
