@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fondscrawler — Anh Thu Pham</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f8;
+    --primary: #4a3fa5;
+    --primary-light: #7b72d4;
+    --accent: #c9a7e8;
+    --accent2: #a8d8d0;
+    --text: #1a1830;
+    --muted: #7a7899;
+    --border: #e4e2f0;
+    --gradient: linear-gradient(135deg, #e8e4f8 0%, #f0e8f8 40%, #e4f0f8 100%);
+    --warn: #f0e6d3;
+    --warn-border: #e0c89a;
+    --ok: #e6f4ed;
+    --ok-border: #9ecfb5;
+    --danger: #fde8e8;
+    --danger-border: #f0b0b0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(74,63,165,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(201,167,232,0.12) 0%, transparent 60%);
+  }
+  header {
+    padding: 1.5rem 2.5rem; display: flex; align-items: center; gap: 1rem;
+    border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 10;
+  }
+  .logo-mark {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif; color: white; font-size: 1.1rem; flex-shrink: 0;
+  }
+  .header-text h1 { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--primary); }
+  .header-text p { font-size: 0.72rem; color: var(--muted); font-weight: 300; }
+  .badge { background: var(--primary); color: white; font-size: 0.6rem; padding: 0.15rem 0.5rem; border-radius: 100px; font-weight: 600; letter-spacing: 0.05em; margin-left: 0.5rem; vertical-align: middle; }
+  .header-nav { margin-left: auto; display: flex; gap: 0.6rem; }
+  .nav-link { font-size: 0.78rem; color: var(--muted); text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 8px; border: 1px solid var(--border); background: white; transition: all 0.15s; }
+  .nav-link:hover { border-color: var(--primary-light); color: var(--primary); }
+  .nav-link.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .main { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+
+  /* Intro */
+  .intro-card {
+    background: var(--gradient); border: 1px solid var(--border); border-radius: 20px;
+    padding: 2rem 2.5rem; margin-bottom: 2rem; position: relative; overflow: hidden;
+  }
+  .intro-card::after { content: '⟳'; position: absolute; right: 2rem; top: 1.5rem; font-size: 2.5rem; color: var(--primary-light); opacity: 0.2; }
+  .intro-card h2 { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--primary); margin-bottom: 0.4rem; }
+  .intro-card p { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
+  .feature-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem; }
+  .pill { background: white; border: 1px solid var(--border); border-radius: 100px; padding: 0.3rem 0.8rem; font-size: 0.75rem; color: var(--primary); font-weight: 500; }
+
+  /* Form card */
+  .form-card {
+    background: white; border: 1px solid var(--border); border-radius: 20px;
+    padding: 2rem 2.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 20px rgba(74,63,165,0.05);
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif; font-size: 1.05rem; color: var(--primary);
+    margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.6rem;
+  }
+  .num {
+    width: 26px; height: 26px; background: var(--primary); color: white;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-family: 'DM Sans', sans-serif; font-weight: 600; flex-shrink: 0;
+  }
+  .field { margin-bottom: 1.25rem; }
+  label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 0.4rem; }
+  .sublabel { font-size: 0.74rem; color: var(--muted); font-weight: 400; margin-left: 0.2rem; }
+  .field-note { font-size: 0.78rem; color: var(--muted); line-height: 1.5; margin-bottom: 0.4rem; }
+  input[type="text"], input[type="password"], input[type="url"] {
+    width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text);
+    background: #fafafa; transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+  }
+  input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(74,63,165,0.08); background: white; }
+
+  /* Key row: password + toggle */
+  .key-row { position: relative; }
+  .key-row input { padding-right: 3rem; font-family: monospace; font-size: 0.8rem; }
+  .key-toggle {
+    position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: var(--muted); font-size: 0.75rem; padding: 0.2rem 0.4rem;
+  }
+
+  /* CTA button */
+  .crawl-btn {
+    width: 100%; padding: 1.1rem; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white; border: none; border-radius: 16px; font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem; cursor: pointer; transition: all 0.25s; box-shadow: 0 4px 20px rgba(74,63,165,0.25);
+    margin-top: 0.5rem; letter-spacing: 0.01em;
+  }
+  .crawl-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(74,63,165,0.32); }
+  .crawl-btn:disabled { opacity: 0.55; transform: none; cursor: not-allowed; }
+
+  /* Progress section */
+  .progress-section { display: none; }
+  .progress-card {
+    background: white; border: 1px solid var(--border); border-radius: 20px;
+    padding: 2rem 2.5rem; margin-bottom: 1.5rem;
+  }
+  .progress-title { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--primary); margin-bottom: 1.5rem; }
+  .step-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .step {
+    display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 1rem;
+    border-radius: 12px; border: 1px solid var(--border); background: #fafafa;
+    font-size: 0.85rem; color: var(--muted); transition: all 0.3s;
+  }
+  .step.active { border-color: var(--primary-light); background: #f0eef8; color: var(--primary); font-weight: 600; }
+  .step.done { border-color: var(--ok-border); background: var(--ok); color: #2a6048; }
+  .step.error { border-color: var(--danger-border); background: var(--danger); color: #8a2020; }
+  .step-icon { font-size: 1.1rem; width: 1.4rem; text-align: center; flex-shrink: 0; }
+  .step-text { flex: 1; }
+  .step-detail { font-size: 0.75rem; opacity: 0.8; margin-top: 0.1rem; }
+  .spinner-sm {
+    width: 16px; height: 16px; border: 2px solid rgba(74,63,165,0.2);
+    border-top-color: var(--primary); border-radius: 50%;
+    animation: spin 0.8s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .log-box {
+    background: #1a1830; color: #b8d4b0; font-family: monospace; font-size: 0.75rem;
+    border-radius: 12px; padding: 1rem 1.25rem; max-height: 180px; overflow-y: auto;
+    margin-top: 1rem; line-height: 1.7;
+  }
+  .log-box .log-ts { color: #5a5878; margin-right: 0.5rem; }
+  .log-box .log-ok { color: #7ec89a; }
+  .log-box .log-warn { color: #e8c870; }
+  .log-box .log-err { color: #e87070; }
+
+  /* Result section */
+  .result-section { display: none; }
+  .result-header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+    margin-bottom: 1.5rem; flex-wrap: wrap;
+  }
+  .result-header h2 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; color: var(--primary); }
+  .result-header p { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+  .btn-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .btn-secondary {
+    padding: 0.5rem 1rem; border: 1.5px solid var(--border); border-radius: 10px;
+    background: white; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--primary-light); color: var(--primary); }
+  .reset-btn {
+    padding: 0.6rem 1.2rem; border: 1.5px solid var(--border); border-radius: 10px;
+    background: white; color: var(--muted); font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .reset-btn:hover { border-color: var(--primary-light); color: var(--primary); }
+
+  /* Fonds summary banner */
+  .fonds-banner {
+    background: var(--gradient); border: 1px solid var(--border); border-radius: 16px;
+    padding: 1.25rem 1.75rem; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .fonds-banner-icon { font-size: 2rem; }
+  .fonds-banner-text h3 { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--primary); }
+  .fonds-banner-text p { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+  .fonds-banner-url { margin-left: auto; font-size: 0.78rem; }
+  .fonds-banner-url a { color: var(--primary); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Regeling cards */
+  .regeling-card {
+    background: white; border: 1px solid var(--border); border-radius: 16px;
+    margin-bottom: 1rem; overflow: hidden; box-shadow: 0 2px 12px rgba(74,63,165,0.04);
+    transition: box-shadow 0.2s;
+  }
+  .regeling-card:hover { box-shadow: 0 4px 20px rgba(74,63,165,0.1); }
+  .regeling-header {
+    padding: 1.1rem 1.5rem; display: flex; align-items: center; gap: 1rem;
+    cursor: pointer; border-bottom: 1px solid transparent; transition: border-color 0.2s;
+  }
+  .regeling-header:hover { border-bottom-color: var(--border); }
+  .regeling-header.open { border-bottom-color: var(--border); }
+  .regeling-name { font-weight: 700; font-size: 0.95rem; flex: 1; }
+  .score-badge {
+    padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.03em; white-space: nowrap; flex-shrink: 0;
+  }
+  .score-high { background: #d4f0e2; color: #1a6040; }
+  .score-mid  { background: #fef0d6; color: #7a4a00; }
+  .score-low  { background: #fde4e4; color: #7a1010; }
+  .score-unk  { background: #ebebf5; color: var(--muted); }
+  .chevron { color: var(--muted); font-size: 0.8rem; transition: transform 0.2s; flex-shrink: 0; }
+  .chevron.open { transform: rotate(180deg); }
+
+  .regeling-body { display: none; padding: 1.25rem 1.5rem 1.5rem; }
+  .regeling-body.open { display: block; }
+
+  /* Data grid inside regeling */
+  .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .data-grid { grid-template-columns: 1fr; } }
+  .data-cell {
+    background: #fafafa; border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.65rem 0.9rem;
+  }
+  .data-cell .dc-label { font-size: 0.68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; }
+  .data-cell .dc-value { font-size: 0.85rem; color: var(--text); line-height: 1.4; }
+  .data-cell.highlight { border-color: var(--primary-light); background: #f3f1fc; }
+  .data-cell.warn-cell { border-color: var(--warn-border); background: var(--warn); }
+
+  /* Criteria lists */
+  .criteria-section { margin-bottom: 0.85rem; }
+  .criteria-section h4 { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
+  .criteria-list { display: flex; flex-direction: column; gap: 0.3rem; }
+  .criteria-item {
+    display: flex; align-items: flex-start; gap: 0.5rem;
+    font-size: 0.83rem; line-height: 1.45; padding: 0.35rem 0.6rem; border-radius: 8px;
+  }
+  .criteria-item.hard { background: #fafafa; border: 1px solid var(--border); }
+  .criteria-item.excl { background: var(--danger); border: 1px solid var(--danger-border); color: #7a1010; }
+  .criteria-item.excl .ci-dot { color: #c03030; }
+  .ci-dot { flex-shrink: 0; margin-top: 0.1rem; }
+
+  /* Evidence */
+  .evidence-section { margin-top: 0.85rem; }
+  .evidence-section h4 { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; }
+  .evidence-item { border: 1px solid var(--border); border-radius: 10px; padding: 0.65rem 0.9rem; margin-bottom: 0.4rem; }
+  .evidence-url { font-size: 0.72rem; color: var(--primary); font-weight: 600; display: block; margin-bottom: 0.25rem; word-break: break-all; text-decoration: underline; text-underline-offset: 2px; }
+  .evidence-quote { font-size: 0.8rem; color: var(--muted); font-style: italic; line-height: 1.5; }
+
+  /* Uncertain tag */
+  .uncertain { color: #9a6a00; background: #fef8e6; border: 1px solid #f0d870; border-radius: 6px; padding: 0.1rem 0.4rem; font-size: 0.75rem; font-weight: 600; }
+
+  /* No results */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .empty-state .es-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty-state h3 { font-family: 'DM Serif Display', serif; color: var(--text); margin-bottom: 0.5rem; }
+
+  /* Raw JSON toggle */
+  .raw-toggle { font-size: 0.75rem; color: var(--muted); cursor: pointer; text-decoration: underline; margin-top: 1rem; display: inline-block; }
+  .raw-json { display: none; background: #1a1830; color: #a8d4f0; font-family: monospace; font-size: 0.72rem; border-radius: 12px; padding: 1rem; margin-top: 0.5rem; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">S</div>
+  <div class="header-text">
+    <h1>Subsidietool <span class="badge">BETA</span></h1>
+    <p>Anh Thu Pham — fondsenanalyse & subsidiescan</p>
+  </div>
+  <nav class="header-nav">
+    <a href="index.html" class="nav-link">Subsidiescan</a>
+    <a href="fondscrawler.html" class="nav-link active">Fondscrawler</a>
+  </nav>
+</header>
+
+<div class="main">
+
+  <!-- Intro -->
+  <div class="intro-card">
+    <h2>Fondscrawler</h2>
+    <p>Geef een website-URL van een fonds op. De tool crawlt automatisch de pagina's met regelingen, richtlijnen en criteria — en laat Claude er een gestructureerde analyse van maken.</p>
+    <div class="feature-pills">
+      <span class="pill">🕷 Apify webcrawler</span>
+      <span class="pill">📄 PDF-extractie</span>
+      <span class="pill">🤖 Claude-analyse</span>
+      <span class="pill">⚡ Automatisch gefilterd</span>
+      <span class="pill">📋 JSON output</span>
+    </div>
+  </div>
+
+  <!-- Form section -->
+  <div id="formSection">
+
+    <!-- API keys -->
+    <div class="form-card">
+      <div class="section-title"><span class="num">1</span> API sleutels</div>
+
+      <div class="field">
+        <label>Apify API Token</label>
+        <p class="field-note">Maak een account op apify.com → Settings → Integrations → API Tokens. Gratis tier: ~5 uur crawltijd/maand.</p>
+        <div class="key-row">
+          <input type="password" id="apifyToken" placeholder="apify_api_...">
+          <button class="key-toggle" onclick="toggleKey('apifyToken', this)">toon</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Claude API Key</label>
+        <div class="key-row">
+          <input type="password" id="claudeApiKey" placeholder="sk-ant-api03-...">
+          <button class="key-toggle" onclick="toggleKey('claudeApiKey', this)">toon</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- URL + settings -->
+    <div class="form-card">
+      <div class="section-title"><span class="num">2</span> Fonds website</div>
+
+      <div class="field">
+        <label>Website URL van het fonds</label>
+        <p class="field-note">Gebruik de hoofdpagina of de subsidies-pagina. Bijv. https://www.stimuleringsfonds.nl/subsidies</p>
+        <input type="url" id="startUrl" placeholder="https://www.fondsnaam.nl/subsidies">
+      </div>
+
+      <div class="field">
+        <label>Crawl instellingen <span class="sublabel">(standaard goed voor de meeste fondsen)</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.5rem;">
+          <div>
+            <label style="font-size:0.75rem;color:var(--muted);font-weight:500;">Max diepte</label>
+            <input type="text" id="crawlDepth" value="3" style="margin-top:0.25rem;">
+          </div>
+          <div>
+            <label style="font-size:0.75rem;color:var(--muted);font-weight:500;">Max pagina's</label>
+            <input type="text" id="crawlPages" value="30" style="margin-top:0.25rem;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="crawl-btn" onclick="startCrawl()">🕷 Crawl + Analyseer fonds</button>
+  </div>
+
+  <!-- Progress section -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-card">
+      <div class="progress-title">⟳ Bezig met analyseren...</div>
+      <div class="step-list">
+        <div class="step" id="step1">
+          <span class="step-icon">🕷</span>
+          <div class="step-text">
+            <div>Apify crawl starten</div>
+            <div class="step-detail" id="step1detail"></div>
+          </div>
+          <div class="spinner-sm" id="spin1" style="display:none;"></div>
+        </div>
+        <div class="step" id="step2">
+          <span class="step-icon">⏳</span>
+          <div class="step-text">
+            <div>Wachten op crawl resultaat</div>
+            <div class="step-detail" id="step2detail">Pollen elke 5 seconden...</div>
+          </div>
+          <div class="spinner-sm" id="spin2" style="display:none;"></div>
+        </div>
+        <div class="step" id="step3">
+          <span class="step-icon">📥</span>
+          <div class="step-text">
+            <div>Dataset ophalen & filteren</div>
+            <div class="step-detail" id="step3detail"></div>
+          </div>
+          <div class="spinner-sm" id="spin3" style="display:none;"></div>
+        </div>
+        <div class="step" id="step4">
+          <span class="step-icon">🤖</span>
+          <div class="step-text">
+            <div>Claude-analyse uitvoeren</div>
+            <div class="step-detail" id="step4detail"></div>
+          </div>
+          <div class="spinner-sm" id="spin4" style="display:none;"></div>
+        </div>
+        <div class="step" id="step5">
+          <span class="step-icon">✦</span>
+          <div class="step-text">
+            <div>Resultaten renderen</div>
+            <div class="step-detail" id="step5detail"></div>
+          </div>
+        </div>
+      </div>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </div>
+
+  <!-- Result section -->
+  <div class="result-section" id="resultSection">
+
+    <div class="result-header">
+      <div>
+        <h2>Fondsanalyse Resultaat</h2>
+        <p id="resultMeta"></p>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="copyJson()">📋 JSON kopiëren</button>
+        <button class="btn-secondary" onclick="window.print()">🖨️ Afdrukken</button>
+      </div>
+    </div>
+
+    <div id="fondsBanner"></div>
+    <div id="regelingCards"></div>
+
+    <span class="raw-toggle" onclick="toggleRaw()">▸ Bekijk ruwe JSON</span>
+    <div class="raw-json" id="rawJson"></div>
+
+    <div style="margin-top:1.5rem;">
+      <button class="reset-btn" onclick="resetAll()">← Nieuwe analyse</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Helpers ──────────────────────────────────────────────────────
+function toggleKey(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? 'toon' : 'verberg';
+}
+
+let rawJsonData = null;
+
+function log(msg, type = '') {
+  const box = document.getElementById('logBox');
+  const ts = new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const cls = type === 'ok' ? 'log-ok' : type === 'warn' ? 'log-warn' : type === 'err' ? 'log-err' : '';
+  box.innerHTML += `<div><span class="log-ts">[${ts}]</span><span class="${cls}">${escHtml(msg)}</span></div>`;
+  box.scrollTop = box.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setStep(n, state, detail = '') {
+  const step = document.getElementById(`step${n}`);
+  const spin = document.getElementById(`spin${n}`);
+  step.className = 'step ' + state;
+  if (detail) document.getElementById(`step${n}detail`).textContent = detail;
+  if (spin) spin.style.display = state === 'active' ? 'block' : 'none';
+  const icons = { 1:'🕷', 2:'⏳', 3:'📥', 4:'🤖', 5:'✦' };
+  const doneIcon = { 1:'✅', 2:'✅', 3:'✅', 4:'✅', 5:'✅' };
+  const errIcon  = { 1:'❌', 2:'❌', 3:'❌', 4:'❌', 5:'❌' };
+  step.querySelector('.step-icon').textContent =
+    state === 'done' ? doneIcon[n] : state === 'error' ? errIcon[n] : icons[n];
+}
+
+// ── URL keyword filter ───────────────────────────────────────────
+const URL_KEYWORDS = ['aanvragen','richtlijn','regeling','subsidie','voorwaarden','criteria','download','documenten','pdf','aanvraag','open','fonds','programma'];
+
+function isRelevantPage(item) {
+  const url = (item.url || '').toLowerCase();
+  return URL_KEYWORDS.some(kw => url.includes(kw));
+}
+
+function isPdf(item) {
+  const url = (item.url || '').toLowerCase();
+  const ct = (item.contentType || '').toLowerCase();
+  return url.includes('.pdf') || ct.includes('pdf');
+}
+
+// ── Main crawl flow ──────────────────────────────────────────────
+async function startCrawl() {
+  const apifyToken = document.getElementById('apifyToken').value.trim();
+  const claudeKey  = document.getElementById('claudeApiKey').value.trim();
+  const startUrl   = document.getElementById('startUrl').value.trim();
+  const maxDepth   = parseInt(document.getElementById('crawlDepth').value) || 3;
+  const maxPages   = parseInt(document.getElementById('crawlPages').value) || 30;
+
+  if (!apifyToken) return alert('Vul je Apify API token in.');
+  if (!claudeKey)  return alert('Vul je Claude API key in.');
+  if (!startUrl)   return alert('Vul een website URL in.');
+
+  // Switch views
+  document.getElementById('formSection').style.display = 'none';
+  document.getElementById('progressSection').style.display = 'block';
+  document.getElementById('resultSection').style.display = 'none';
+
+  try {
+    // ── STEP 1: Start Apify run ─────────────────────────────────
+    setStep(1, 'active', 'Actor starten...');
+    log(`Starten Apify crawl voor: ${startUrl}`);
+
+    const runResp = await fetch(
+      `https://api.apify.com/v2/acts/apify~website-content-crawler/runs?token=${apifyToken}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startUrls: [{ url: startUrl }],
+          maxCrawlDepth: maxDepth,
+          maxCrawlPages: maxPages,
+          saveMarkdown: true,
+          removeCookieWarnings: true,
+          blockMedia: true,
+          saveContentTypes: 'application/pdf'
+        })
+      }
+    );
+
+    if (!runResp.ok) {
+      const err = await runResp.text();
+      throw new Error(`Apify start mislukt (${runResp.status}): ${err}`);
+    }
+
+    const runData = await runResp.json();
+    const runId = runData.data?.id;
+    const datasetId = runData.data?.defaultDatasetId;
+    if (!runId) throw new Error('Geen run ID ontvangen van Apify');
+
+    setStep(1, 'done', `Run ID: ${runId}`);
+    log(`Run gestart — ID: ${runId}`, 'ok');
+
+    // ── STEP 2: Poll run status ─────────────────────────────────
+    setStep(2, 'active', 'Status controleren...');
+    log('Pollen op status...');
+
+    let status = 'RUNNING';
+    let pollCount = 0;
+    const maxPolls = 72; // 6 min max
+
+    while (status === 'RUNNING' || status === 'READY' || status === 'ABORTING') {
+      await sleep(5000);
+      pollCount++;
+      const pollResp = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apifyToken}`);
+      if (!pollResp.ok) throw new Error(`Poll mislukt (${pollResp.status})`);
+      const pollData = await pollResp.json();
+      status = pollData.data?.status;
+      const pages = pollData.data?.stats?.httpRequestsFinished ?? '?';
+      setStep(2, 'active', `Status: ${status} — ${pages} pagina's gecrawld (poll ${pollCount})`);
+      log(`Poll ${pollCount}: ${status} — ${pages} pagina's`);
+      if (pollCount >= maxPolls) throw new Error('Timeout: crawl duurde langer dan 6 minuten');
+    }
+
+    if (status !== 'SUCCEEDED') {
+      throw new Error(`Crawl beëindigd met status: ${status}`);
+    }
+
+    setStep(2, 'done', `Succesvol afgerond in ${pollCount * 5}s`);
+    log(`Crawl voltooid — status: ${status}`, 'ok');
+
+    // ── STEP 3: Download & filter dataset ──────────────────────
+    setStep(3, 'active', 'Items downloaden...');
+    log('Dataset ophalen...');
+
+    const dsId = datasetId || runData.data?.defaultDatasetId;
+    const itemsResp = await fetch(
+      `https://api.apify.com/v2/datasets/${dsId}/items?token=${apifyToken}&format=json&limit=200&clean=true`
+    );
+    if (!itemsResp.ok) throw new Error(`Dataset ophalen mislukt (${itemsResp.status})`);
+    const items = await itemsResp.json();
+
+    log(`${items.length} items ontvangen`);
+
+    // Filter relevant pages and PDFs
+    const relevantPages = items.filter(i => !isPdf(i) && isRelevantPage(i)).slice(0, 12);
+    const pdfItems      = items.filter(i => isPdf(i)).slice(0, 5);
+    const allFiltered   = [...relevantPages, ...pdfItems];
+
+    if (allFiltered.length === 0) {
+      log('Geen relevante pagina\'s gevonden — terugvallen op eerste 8 pagina\'s', 'warn');
+      allFiltered.push(...items.slice(0, 8));
+    }
+
+    setStep(3, 'done', `${relevantPages.length} pagina's + ${pdfItems.length} PDF's geselecteerd`);
+    log(`Gefilterd: ${relevantPages.length} pagina's, ${pdfItems.length} PDF's`, 'ok');
+
+    // ── STEP 4: Send to Claude ──────────────────────────────────
+    setStep(4, 'active', 'Prompt opbouwen en versturen...');
+
+    // Build bundle text
+    const bundle = allFiltered.map((item, i) => {
+      const content = item.markdown || item.text || item.pageContent || '';
+      const truncated = content.substring(0, 4000);
+      return `--- BRON ${i+1}: ${item.url} ---\n${truncated}`;
+    }).join('\n\n');
+
+    log(`Bundle grootte: ~${Math.round(bundle.length/1000)}k tekens`);
+
+    const prompt = buildPrompt(bundle, startUrl);
+    log('Claude API aanroepen...');
+
+    const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'x-api-key': claudeKey
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!claudeResp.ok) {
+      const err = await claudeResp.text();
+      throw new Error(`Claude API fout (${claudeResp.status}): ${err}`);
+    }
+
+    const claudeData = await claudeResp.json();
+    const rawText = claudeData.content?.map(c => c.text || '').join('') || '';
+    log('Claude response ontvangen', 'ok');
+
+    // Parse JSON
+    let parsed;
+    try {
+      const jsonMatch = rawText.match(/```json\s*([\s\S]*?)\s*```/) ||
+                        rawText.match(/(\{[\s\S]*\})/);
+      const jsonStr = jsonMatch ? jsonMatch[1] : rawText;
+      parsed = JSON.parse(jsonStr);
+    } catch(e) {
+      log('JSON parse mislukt — probeer directe parse', 'warn');
+      try {
+        parsed = JSON.parse(rawText);
+      } catch(e2) {
+        throw new Error('Kon Claude output niet parsen als JSON. ' + e2.message);
+      }
+    }
+
+    setStep(4, 'done', `${parsed.regelingen?.length ?? 0} regelingen gevonden`);
+    log(`Analyse klaar — ${parsed.regelingen?.length ?? 0} regelingen`, 'ok');
+
+    // ── STEP 5: Render ──────────────────────────────────────────
+    setStep(5, 'active', 'Kaarten opbouwen...');
+    rawJsonData = parsed;
+    renderResults(parsed, startUrl, allFiltered.length);
+    setStep(5, 'done', 'Gereed');
+    log('Klaar!', 'ok');
+
+    // Show result
+    await sleep(600);
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('resultSection').style.display = 'block';
+
+  } catch(err) {
+    log(`FOUT: ${err.message}`, 'err');
+    // Mark current active step as error
+    [1,2,3,4,5].forEach(n => {
+      if (document.getElementById(`step${n}`).classList.contains('active')) {
+        setStep(n, 'error', err.message);
+      }
+    });
+  }
+}
+
+// ── Prompt template ──────────────────────────────────────────────
+function buildPrompt(bundle, sourceUrl) {
+  return `Je bent een subsidie-analist gespecialiseerd in Nederlandse kunst- en cultuurfondsen.
+Gebruik uitsluitend de aangeleverde webpagina- en PDF-teksten.
+Verzin geen informatie.
+Als iets niet expliciet in de bronnen staat, schrijf: "ONZEKER – handmatig controleren".
+
+Doel:
+Maak een eerste, redelijk accurate filtering van regelingen van dit fonds: ${sourceUrl}
+Focus sterk op:
+- openstelling / deadline
+- min en max bedrag
+- discipline / doelgroep
+- projectfase
+- harde criteria
+- uitsluitingscriteria (heel belangrijk)
+
+Geef uitsluitend JSON output — geen uitleg, geen markdown buiten de JSON, geen commentaar.
+Begin direct met { en eindig met }.
+
+JSON schema:
+{
+  "fonds_naam": "string",
+  "fonds_url": "string",
+  "fonds_omschrijving": "string (max 2 zinnen)",
+  "regelingen": [
+    {
+      "naam": "string",
+      "match_score": "HOOG | MIDDEL | LAAG | ONZEKER",
+      "openstelling": "string (bijv. 'Doorlopend', 'Januari–maart 2026', 'ONZEKER – handmatig controleren')",
+      "deadline": "string",
+      "min_bedrag": "string (bijv. '€5.000' of 'ONZEKER – handmatig controleren')",
+      "max_bedrag": "string (bijv. '€50.000' of 'ONZEKER – handmatig controleren')",
+      "discipline": "string",
+      "doelgroep": "string",
+      "projectfase": "string",
+      "harde_criteria": ["string"],
+      "uitsluitingscriteria": ["string"],
+      "evidence": [
+        {
+          "url": "string",
+          "quote": "string (max 25 woorden)"
+        }
+      ]
+    }
+  ]
+}
+
+BRONNEN:
+${bundle}`;
+}
+
+// ── Render results ───────────────────────────────────────────────
+function renderResults(data, sourceUrl, pageCount) {
+  const now = new Date().toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('resultMeta').textContent = `Geanalyseerd op ${now} — ${pageCount} bronpagina's verwerkt`;
+
+  // Banner
+  document.getElementById('fondsBanner').innerHTML = `
+    <div class="fonds-banner">
+      <div class="fonds-banner-icon">🏛</div>
+      <div class="fonds-banner-text">
+        <h3>${escHtml(data.fonds_naam || 'Onbekend fonds')}</h3>
+        <p>${escHtml(data.fonds_omschrijving || '')}</p>
+      </div>
+      <div class="fonds-banner-url"><a href="${escHtml(data.fonds_url || sourceUrl)}" target="_blank" rel="noopener">${escHtml(data.fonds_url || sourceUrl)} ↗</a></div>
+    </div>`;
+
+  // Cards
+  const regelingen = data.regelingen || [];
+  if (regelingen.length === 0) {
+    document.getElementById('regelingCards').innerHTML = `
+      <div class="empty-state">
+        <div class="es-icon">🔍</div>
+        <h3>Geen regelingen gevonden</h3>
+        <p>Claude kon geen specifieke regelingen identificeren in de gecrawlde bronnen. Probeer een specifiekere subsidie-URL.</p>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  regelingen.forEach((r, i) => {
+    const scoreClass = r.match_score === 'HOOG' ? 'score-high' : r.match_score === 'MIDDEL' ? 'score-mid' : r.match_score === 'LAAG' ? 'score-low' : 'score-unk';
+    const scoreLabel = r.match_score || 'ONZEKER';
+
+    const criteria = (r.harde_criteria || []).map(c =>
+      `<div class="criteria-item hard"><span class="ci-dot">→</span><span>${markUncertain(escHtml(c))}</span></div>`
+    ).join('');
+
+    const excl = (r.uitsluitingscriteria || []).map(c =>
+      `<div class="criteria-item excl"><span class="ci-dot">✕</span><span>${markUncertain(escHtml(c))}</span></div>`
+    ).join('');
+
+    const evidence = (r.evidence || []).map(ev =>
+      `<div class="evidence-item">
+        <a class="evidence-url" href="${escHtml(ev.url)}" target="_blank" rel="noopener">${escHtml(ev.url)}</a>
+        <div class="evidence-quote">"${markUncertain(escHtml(ev.quote || ''))}"</div>
+      </div>`
+    ).join('');
+
+    html += `
+    <div class="regeling-card">
+      <div class="regeling-header" onclick="toggleCard(${i})">
+        <div class="regeling-name">${escHtml(r.naam || 'Onbekende regeling')}</div>
+        <span class="score-badge ${scoreClass}">${scoreLabel}</span>
+        <span class="chevron" id="chev${i}">▾</span>
+      </div>
+      <div class="regeling-body" id="body${i}">
+        <div class="data-grid">
+          <div class="data-cell highlight">
+            <div class="dc-label">Openstelling</div>
+            <div class="dc-value">${markUncertain(escHtml(r.openstelling || '—'))}</div>
+          </div>
+          <div class="data-cell highlight">
+            <div class="dc-label">Deadline</div>
+            <div class="dc-value">${markUncertain(escHtml(r.deadline || '—'))}</div>
+          </div>
+          <div class="data-cell">
+            <div class="dc-label">Min. bedrag</div>
+            <div class="dc-value">${markUncertain(escHtml(r.min_bedrag || '—'))}</div>
+          </div>
+          <div class="data-cell">
+            <div class="dc-label">Max. bedrag</div>
+            <div class="dc-value">${markUncertain(escHtml(r.max_bedrag || '—'))}</div>
+          </div>
+          <div class="data-cell">
+            <div class="dc-label">Discipline</div>
+            <div class="dc-value">${markUncertain(escHtml(r.discipline || '—'))}</div>
+          </div>
+          <div class="data-cell">
+            <div class="dc-label">Doelgroep</div>
+            <div class="dc-value">${markUncertain(escHtml(r.doelgroep || '—'))}</div>
+          </div>
+          <div class="data-cell" style="grid-column:1/-1;">
+            <div class="dc-label">Projectfase</div>
+            <div class="dc-value">${markUncertain(escHtml(r.projectfase || '—'))}</div>
+          </div>
+        </div>
+
+        ${criteria ? `<div class="criteria-section"><h4>Harde criteria</h4><div class="criteria-list">${criteria}</div></div>` : ''}
+        ${excl ? `<div class="criteria-section"><h4>⚠️ Uitsluitingscriteria</h4><div class="criteria-list">${excl}</div></div>` : ''}
+        ${evidence ? `<div class="evidence-section"><h4>Bronvermelding</h4>${evidence}</div>` : ''}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('regelingCards').innerHTML = html;
+
+  // Auto-open first card
+  if (regelingen.length > 0) toggleCard(0);
+
+  // Raw JSON
+  document.getElementById('rawJson').textContent = JSON.stringify(rawJsonData, null, 2);
+}
+
+function markUncertain(str) {
+  return str.replace(/ONZEKER – handmatig controleren/g,
+    '<span class="uncertain">⚠ ONZEKER – controleer</span>');
+}
+
+function toggleCard(i) {
+  const body = document.getElementById(`body${i}`);
+  const chev = document.getElementById(`chev${i}`);
+  const header = body.previousElementSibling;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chev.classList.toggle('open', !isOpen);
+  header.classList.toggle('open', !isOpen);
+}
+
+function toggleRaw() {
+  const raw = document.getElementById('rawJson');
+  const toggle = document.querySelector('.raw-toggle');
+  const isOpen = raw.style.display === 'block';
+  raw.style.display = isOpen ? 'none' : 'block';
+  toggle.textContent = isOpen ? '▸ Bekijk ruwe JSON' : '▾ Verberg ruwe JSON';
+}
+
+function copyJson() {
+  if (!rawJsonData) return;
+  navigator.clipboard.writeText(JSON.stringify(rawJsonData, null, 2)).then(() => {
+    const b = event.target;
+    b.textContent = '✓ Gekopieerd!';
+    setTimeout(() => b.textContent = '📋 JSON kopiëren', 2000);
+  });
+}
+
+function resetAll() {
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('progressSection').style.display = 'none';
+  document.getElementById('formSection').style.display = 'block';
+  document.getElementById('logBox').innerHTML = '';
+  document.getElementById('rawJson').textContent = '';
+  document.getElementById('rawJson').style.display = 'none';
+  document.querySelector('.raw-toggle').textContent = '▸ Bekijk ruwe JSON';
+  rawJsonData = null;
+  [1,2,3,4,5].forEach(n => {
+    setStep(n, '', '');
+    const detail = document.getElementById(`step${n}detail`);
+    if (detail) detail.textContent = n === 2 ? 'Pollen elke 5 seconden...' : '';
+  });
+  window.scrollTo(0, 0);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
