@@ -333,8 +333,6 @@ textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
 
 <!-- Pipeline progress bar -->
 <div class="pipeline-bar" id="pipelineBar">
-  <div class="pipe-step done" id="pipeKeys"><div class="pipe-dot"></div> API Keys</div>
-  <span class="pipe-arrow">→</span>
   <div class="pipe-step active" id="pipeProject"><div class="pipe-dot"></div> Project invoeren</div>
   <span class="pipe-arrow">→</span>
   <div class="pipe-step" id="pipeCrawl"><div class="pipe-dot"></div> Fonds discovery + crawl</div>
@@ -344,38 +342,10 @@ textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
 
 <div class="main">
 
-<!-- ══════════════════════════════════════════════════════════════ -->
-<!--  API KEYS (always visible)                                     -->
-<!-- ══════════════════════════════════════════════════════════════ -->
-<details class="keys-card" id="keysCard" open>
-  <summary>🔑 API Sleutels</summary>
-  <div class="keys-grid">
-    <div class="key-field">
-      <label>Claude API Key</label>
-      <div class="key-row">
-        <input type="password" id="claudeApiKey" placeholder="sk-ant-api03-...">
-        <button class="key-toggle" onclick="toggleKey('claudeApiKey',this)">toon</button>
-      </div>
-    </div>
-    <div class="key-field">
-      <label>Apify API Token</label>
-      <div class="key-row">
-        <input type="password" id="apifyToken" placeholder="apify_api_...">
-        <button class="key-toggle" onclick="toggleKey('apifyToken',this)">toon</button>
-      </div>
-    </div>
-    <div class="key-field">
-      <label>SerpAPI Key</label>
-      <div class="key-row">
-        <input type="password" id="serpApiKey" placeholder="serpapi_key_...">
-        <button class="key-toggle" onclick="toggleKey('serpApiKey',this)">toon</button>
-      </div>
-    </div>
-    <div class="key-field" style="display:flex;align-items:flex-end;">
-      <p style="font-size:0.72rem;color:var(--muted);line-height:1.5;">Keys worden alleen lokaal gebruikt en nooit opgeslagen. Sluit dit na invullen.</p>
-    </div>
-  </div>
-</details>
+<!-- Hidden API key inputs (auto-loaded from .env via /api/keys) -->
+<input type="hidden" id="claudeApiKey">
+<input type="hidden" id="apifyToken">
+<input type="hidden" id="serpApiKey">
 
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!--  STEP 1 — PROJECT INVOEREN                                    -->
@@ -596,10 +566,9 @@ textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
           <span class="tag" data-val="Stimuleringsfonds" data-fonds="Stimuleringsfonds">Stimuleringsfonds</span>
           <span class="tag" data-val="Mondriaanfonds" data-fonds="Mondriaanfonds">Mondriaanfonds</span>
           <span class="tag" data-val="Fonds Podiumkunsten" data-fonds="Fonds Podiumkunsten">Fonds Podiumkunsten</span>
-          <span class="tag" data-val="Filmfonds" data-fonds="Filmfonds">Filmfonds</span>
+          <span class="tag" data-val="Filmfonds" data-fonds="Filmfonds">Nederlands Filmfonds</span>
           <span class="tag" data-val="Nederlands Letterenfonds" data-fonds="Nederlands Letterenfonds">Nederlands Letterenfonds</span>
           <span class="tag" data-val="Fonds voor Cultuurparticipatie" data-fonds="Fonds voor Cultuurparticipatie">Fonds voor Cultuurparticipatie</span>
-          <span class="tag" data-val="Gemeente subsidie" data-fonds="Gemeente">Gemeente</span>
           <span class="tag" data-val="geen eerdere subsidies" data-fonds="">Nee</span>
         </div>
         <div id="regelingInputs" style="display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.45rem;"></div>
@@ -793,9 +762,9 @@ function showSection(sectionId) {
 }
 
 function updatePipeline(activeStep) {
-  const steps = ['pipeKeys','pipeProject','pipeCrawl','pipeMatch'];
-  const order = { keys: 0, project: 1, crawl: 2, match: 3 };
-  const activeIdx = order[activeStep] ?? 1;
+  const steps = ['pipeProject','pipeCrawl','pipeMatch'];
+  const order = { project: 0, crawl: 1, match: 2 };
+  const activeIdx = order[activeStep] ?? 0;
   steps.forEach((id, i) => {
     const el = document.getElementById(id);
     el.className = 'pipe-step' + (i < activeIdx ? ' done' : i === activeIdx ? ' active' : '');
