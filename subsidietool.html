@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subsidietool — Anh Thu Pham</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Variables & Reset ─────────────────────────────────────────── */
+:root {
+  --bg: #f5f4f8;
+  --primary: #4a3fa5;
+  --primary-light: #7b72d4;
+  --accent: #c9a7e8;
+  --accent2: #a8d8d0;
+  --text: #1a1830;
+  --muted: #7a7899;
+  --border: #e4e2f0;
+  --gradient: linear-gradient(135deg, #e8e4f8 0%, #f0e8f8 40%, #e4f0f8 100%);
+  --warn: #f0e6d3;
+  --warn-border: #e0c89a;
+  --ok: #e6f4ed;
+  --ok-border: #9ecfb5;
+  --danger: #fde8e8;
+  --danger-border: #f0b0b0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(74,63,165,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(201,167,232,0.12) 0%, transparent 60%);
+}
+
+/* ── Header ────────────────────────────────────────────────────── */
+header {
+  padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem;
+  border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20;
+  flex-wrap: wrap; gap: 0.75rem;
+}
+.logo-mark {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 11px; display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Serif Display', serif; color: white; font-size: 1rem; flex-shrink: 0;
+}
+.header-text h1 { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--primary); }
+.header-text p  { font-size: 0.7rem; color: var(--muted); font-weight: 300; }
+.badge { background: var(--primary); color: white; font-size: 0.58rem; padding: 0.12rem 0.45rem; border-radius: 100px; font-weight: 600; letter-spacing: 0.05em; margin-left: 0.4rem; vertical-align: middle; }
+
+/* ── Pipeline progress bar ─────────────────────────────────────── */
+.pipeline-bar {
+  padding: 0.7rem 2rem; background: rgba(255,255,255,0.6); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 0; font-size: 0.76rem; color: var(--muted);
+  overflow-x: auto;
+}
+.pipe-step { display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; border-radius: 100px; transition: all 0.3s; white-space: nowrap; }
+.pipe-step.active { background: #f0eef8; color: var(--primary); font-weight: 600; }
+.pipe-step.done { color: #2a6048; font-weight: 600; }
+.pipe-step .pipe-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; transition: background 0.3s; }
+.pipe-step.active .pipe-dot { background: var(--primary-light); }
+.pipe-step.done .pipe-dot { background: #5ec888; }
+.pipe-arrow { color: var(--border); margin: 0 0.15rem; font-size: 0.7rem; }
+
+/* ── Main layout ───────────────────────────────────────────────── */
+.main { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+.flow-section { display: none; }
+.flow-section.active { display: block; }
+
+/* ── Shared API Keys card ──────────────────────────────────────── */
+.keys-card {
+  background: linear-gradient(135deg, #faf8ff, #f5f0ff);
+  border: 1px solid var(--accent); border-radius: 18px;
+  padding: 1.25rem 1.75rem; margin-bottom: 1.75rem;
+}
+.keys-card summary {
+  cursor: pointer; font-family: 'DM Serif Display', serif; font-size: 0.95rem;
+  color: var(--primary); list-style: none; display: flex; align-items: center; gap: 0.5rem;
+}
+.keys-card summary::after { content: '▾'; margin-left: auto; color: var(--muted); }
+details[open] summary::after { content: '▴'; }
+.keys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+@media(max-width:600px) { .keys-grid { grid-template-columns: 1fr; } }
+.key-field label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--muted); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ── Intro card ────────────────────────────────────────────────── */
+.intro-card {
+  background: var(--gradient); border: 1px solid var(--border); border-radius: 20px;
+  padding: 1.75rem 2rem; margin-bottom: 1.75rem; position: relative; overflow: hidden;
+}
+.intro-card::after { position: absolute; right: 1.75rem; top: 1.25rem; font-size: 2rem; color: var(--primary-light); opacity: 0.2; content: '✦'; }
+.intro-card h2 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; color: var(--primary); margin-bottom: 0.35rem; }
+.intro-card p { color: var(--muted); font-size: 0.86rem; line-height: 1.6; }
+.feature-pills { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.85rem; }
+.pill { background: white; border: 1px solid var(--border); border-radius: 100px; padding: 0.25rem 0.7rem; font-size: 0.73rem; color: var(--primary); font-weight: 500; }
+
+/* ── Form card ─────────────────────────────────────────────────── */
+.form-card {
+  background: white; border: 1px solid var(--border); border-radius: 18px;
+  padding: 1.75rem 2rem; margin-bottom: 1.25rem; box-shadow: 0 2px 18px rgba(74,63,165,0.05);
+}
+.section-title {
+  font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--primary);
+  margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.55rem;
+}
+.num {
+  width: 24px; height: 24px; background: var(--primary); color: white;
+  border-radius: 7px; display: flex; align-items: center; justify-content: center;
+  font-size: 0.68rem; font-family: 'DM Sans', sans-serif; font-weight: 600; flex-shrink: 0;
+}
+.field { margin-bottom: 1.1rem; }
+label { display: block; font-size: 0.81rem; font-weight: 600; color: var(--text); margin-bottom: 0.35rem; }
+.sublabel { font-size: 0.72rem; color: var(--muted); font-weight: 400; margin-left: 0.15rem; }
+.field-note { font-size: 0.76rem; color: var(--muted); line-height: 1.5; margin-bottom: 0.4rem; }
+input[type="text"], input[type="password"], input[type="url"], textarea, select {
+  width: 100%; padding: 0.7rem 0.95rem; border: 1.5px solid var(--border); border-radius: 11px;
+  font-family: 'DM Sans', sans-serif; font-size: 0.86rem; color: var(--text);
+  background: #fafafa; transition: border-color 0.2s, box-shadow 0.2s; outline: none; -webkit-appearance: none;
+}
+input:focus, textarea:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(74,63,165,0.08); background: white; }
+textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
+
+/* Key row */
+.key-row { position: relative; }
+.key-row input { padding-right: 3rem; font-family: monospace; font-size: 0.78rem; }
+.key-toggle {
+  position: absolute; right: 0.7rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: var(--muted); font-size: 0.72rem; padding: 0.2rem 0.35rem;
+}
+
+/* Tags */
+.tag-group { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.35rem; }
+.tag {
+  padding: 0.34rem 0.75rem; border: 1.5px solid var(--border); border-radius: 100px;
+  font-size: 0.76rem; cursor: pointer; transition: all 0.15s; background: #fafafa;
+  user-select: none; font-family: 'DM Sans', sans-serif;
+}
+.tag:hover { border-color: var(--primary-light); background: #f0eef8; }
+.tag.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: 13px; padding: 1.25rem;
+  text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa; position: relative;
+}
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--primary-light); background: #f0eef8; }
+.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-zone .icon { font-size: 1.6rem; margin-bottom: 0.3rem; }
+.upload-zone p { font-size: 0.8rem; color: var(--muted); }
+.upload-zone strong { color: var(--primary); font-size: 0.82rem; }
+.status-msg { margin-top: 0.55rem; font-size: 0.78rem; padding: 0.45rem 0.75rem; border-radius: 8px; display: none; }
+.status-msg.success { background: var(--ok); color: #2a5a50; display: block; }
+.status-msg.loading { background: #f0eef8; color: var(--primary); display: block; }
+.status-msg.error { background: var(--danger); color: #8a2020; display: block; }
+.context-preview { background: #f5f4f8; border: 1px solid var(--border); border-radius: 9px; padding: 0.65rem 0.9rem; margin-top: 0.55rem; font-size: 0.76rem; color: var(--muted); max-height: 90px; overflow-y: auto; display: none; line-height: 1.5; }
+.context-preview.visible { display: block; }
+.or-divider { text-align: center; color: var(--muted); font-size: 0.76rem; margin: 0.65rem 0; position: relative; }
+.or-divider::before, .or-divider::after { content: ''; position: absolute; top: 50%; width: 42%; height: 1px; background: var(--border); }
+.or-divider::before { left: 0; } .or-divider::after { right: 0; }
+.url-row { display: flex; gap: 0.45rem; align-items: center; }
+.url-row input { flex: 1; }
+.url-fetch-btn {
+  padding: 0.7rem 0.95rem; background: var(--primary); color: white; border: none; border-radius: 11px;
+  font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; flex-shrink: 0;
+}
+.url-fetch-btn:hover { background: var(--primary-light); }
+.url-fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.paste-toggle { font-size: 0.76rem; color: var(--primary); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; margin-top: 0.45rem; display: inline-block; }
+.paste-area { display: none; margin-top: 0.65rem; }
+.paste-area.visible { display: block; }
+.paste-save-btn {
+  margin-top: 0.45rem; padding: 0.45rem 0.9rem; background: var(--primary); color: white; border: none;
+  border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+}
+.regio-info {
+  display: none; background: #e8f4f0; border: 1px solid #b8ddd4;
+  border-radius: 11px; padding: 0.85rem 1.1rem; margin-top: 0.6rem; font-size: 0.8rem; color: #2a5a50;
+}
+.regio-info.visible { display: block; }
+.regio-info strong { display: block; margin-bottom: 0.25rem; font-size: 0.75rem; }
+
+/* ── CTA Buttons ───────────────────────────────────────────────── */
+.cta-btn {
+  width: 100%; padding: 1rem; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white; border: none; border-radius: 14px; font-family: 'DM Serif Display', serif;
+  font-size: 1rem; cursor: pointer; transition: all 0.22s; box-shadow: 0 4px 18px rgba(74,63,165,0.25);
+  margin-top: 0.5rem; letter-spacing: 0.01em;
+}
+.cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(74,63,165,0.32); }
+.cta-btn:disabled { opacity: 0.5; transform: none; cursor: not-allowed; }
+.btn-secondary {
+  padding: 0.48rem 0.95rem; border: 1.5px solid var(--border); border-radius: 9px;
+  background: white; color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.btn-secondary:hover { border-color: var(--primary-light); color: var(--primary); }
+.reset-btn {
+  padding: 0.55rem 1.1rem; border: 1.5px solid var(--border); border-radius: 10px;
+  background: white; color: var(--muted); font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.reset-btn:hover { border-color: var(--primary-light); color: var(--primary); }
+.btn-row { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+
+/* ── Progress steps (crawl) ────────────────────────────────────── */
+.progress-card { background: white; border: 1px solid var(--border); border-radius: 18px; padding: 1.75rem 2rem; margin-bottom: 1.25rem; }
+.progress-title { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--primary); margin-bottom: 1.25rem; }
+.step-list { display: flex; flex-direction: column; gap: 0.65rem; }
+.step {
+  display: flex; align-items: center; gap: 0.8rem; padding: 0.65rem 0.9rem;
+  border-radius: 11px; border: 1px solid var(--border); background: #fafafa;
+  font-size: 0.83rem; color: var(--muted); transition: all 0.3s;
+}
+.step.active { border-color: var(--primary-light); background: #f0eef8; color: var(--primary); font-weight: 600; }
+.step.done  { border-color: var(--ok-border); background: var(--ok); color: #2a6048; }
+.step.error { border-color: var(--danger-border); background: var(--danger); color: #8a2020; }
+.step-icon { font-size: 1rem; width: 1.3rem; text-align: center; flex-shrink: 0; }
+.step-text { flex: 1; }
+.step-detail { font-size: 0.72rem; opacity: 0.8; margin-top: 0.08rem; }
+.spinner-sm { width: 15px; height: 15px; border: 2px solid rgba(74,63,165,0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.log-box {
+  background: #1a1830; color: #b8d4b0; font-family: monospace; font-size: 0.73rem;
+  border-radius: 11px; padding: 0.9rem 1.1rem; max-height: 200px; overflow-y: auto;
+  margin-top: 0.9rem; line-height: 1.7;
+}
+.log-box .log-ts { color: #5a5878; margin-right: 0.45rem; }
+.log-box .log-ok  { color: #7ec89a; }
+.log-box .log-warn{ color: #e8c870; }
+.log-box .log-err { color: #e87070; }
+
+/* ── Result cards & scores ───────────────────────────────────────── */
+.result-card { display: none; background: white; border: 1px solid var(--border); border-radius: 18px; padding: 2rem 2.25rem; box-shadow: 0 2px 18px rgba(74,63,165,0.06); margin-bottom: 1.25rem; }
+.result-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); gap: 0.9rem; flex-wrap: wrap; }
+.result-header h2 { font-family: 'DM Serif Display', serif; color: var(--primary); font-size: 1.2rem; }
+.result-header p { font-size: 0.76rem; color: var(--muted); margin-top: 0.18rem; }
+.fonds-banner { background: var(--gradient); border: 1px solid var(--border); border-radius: 15px; padding: 1.1rem 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+.fonds-banner-icon { font-size: 1.75rem; }
+.fonds-banner-text h3 { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--primary); }
+.fonds-banner-text p { font-size: 0.77rem; color: var(--muted); margin-top: 0.12rem; }
+.fonds-banner-url { margin-left: auto; font-size: 0.75rem; }
+.fonds-banner-url a { color: var(--primary); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.fonds-score-banner { background: linear-gradient(135deg, #f0eef8, #e8e4f8); border: 1.5px solid var(--primary-light); border-radius: 14px; padding: 1rem 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.fonds-score-num { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--primary); line-height: 1; }
+.fonds-score-label { font-size: 0.82rem; color: var(--muted); }
+.fonds-score-label strong { color: var(--text); display: block; font-size: 0.9rem; }
+
+/* Score badges (0-100) */
+.score-badge { padding: 0.22rem 0.65rem; border-radius: 100px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em; white-space: nowrap; flex-shrink: 0; }
+.score-high { background: #d4f0e2; color: #1a6040; }
+.score-mid  { background: #fef0d6; color: #7a4a00; }
+.score-low  { background: #fde4e4; color: #7a1010; }
+.score-excluded { background: #3a1010; color: #fff; font-weight: 800; letter-spacing: 0.05em; }
+.score-unk  { background: #ebebf5; color: var(--muted); }
+
+/* Exclusion banner on regeling */
+.exclusion-banner { background: var(--danger); border: 1.5px solid var(--danger-border); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.85rem; display: flex; align-items: flex-start; gap: 0.6rem; }
+.exclusion-banner .excl-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+.exclusion-banner .excl-text { font-size: 0.82rem; color: #7a1010; line-height: 1.5; }
+.exclusion-banner .excl-text strong { display: block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.15rem; }
+
+/* Regeling cards */
+.regeling-card { background: white; border: 1px solid var(--border); border-radius: 14px; margin-bottom: 0.85rem; overflow: hidden; box-shadow: 0 2px 10px rgba(74,63,165,0.04); transition: box-shadow 0.2s; }
+.regeling-card:hover { box-shadow: 0 4px 18px rgba(74,63,165,0.1); }
+.regeling-card.excluded { border-color: var(--danger-border); opacity: 0.85; }
+.regeling-header { padding: 1rem 1.35rem; display: flex; align-items: center; gap: 0.9rem; cursor: pointer; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+.regeling-header:hover { border-bottom-color: var(--border); }
+.regeling-header.open { border-bottom-color: var(--border); }
+.regeling-name { font-weight: 700; font-size: 0.92rem; flex: 1; }
+.chevron { color: var(--muted); font-size: 0.78rem; transition: transform 0.2s; flex-shrink: 0; }
+.chevron.open { transform: rotate(180deg); }
+.regeling-body { display: none; padding: 1.1rem 1.35rem 1.35rem; }
+.regeling-body.open { display: block; }
+.data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.85rem; }
+@media(max-width:600px) { .data-grid { grid-template-columns: 1fr; } }
+.data-cell { background: #fafafa; border: 1px solid var(--border); border-radius: 9px; padding: 0.58rem 0.8rem; }
+.data-cell.highlight { border-color: var(--primary-light); background: #f3f1fc; }
+.data-cell .dc-label { font-size: 0.65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.2rem; }
+.data-cell .dc-value { font-size: 0.82rem; color: var(--text); line-height: 1.4; }
+.criteria-section { margin-bottom: 0.75rem; }
+.criteria-section h4 { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.35rem; }
+.criteria-list { display: flex; flex-direction: column; gap: 0.25rem; }
+.criteria-item { display: flex; align-items: flex-start; gap: 0.45rem; font-size: 0.8rem; line-height: 1.4; padding: 0.3rem 0.55rem; border-radius: 7px; }
+.criteria-item.hard { background: #fafafa; border: 1px solid var(--border); }
+.criteria-item.excl { background: var(--danger); border: 1px solid var(--danger-border); color: #7a1010; }
+.ci-dot { flex-shrink: 0; margin-top: 0.08rem; }
+.evidence-section { margin-top: 0.75rem; }
+.evidence-section h4 { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.45rem; }
+.evidence-item { border: 1px solid var(--border); border-radius: 9px; padding: 0.58rem 0.8rem; margin-bottom: 0.35rem; }
+.evidence-url { font-size: 0.7rem; color: var(--primary); font-weight: 600; display: block; margin-bottom: 0.2rem; word-break: break-all; text-decoration: underline; text-underline-offset: 2px; }
+.evidence-quote { font-size: 0.77rem; color: var(--muted); font-style: italic; line-height: 1.5; }
+.uncertain { color: #9a6a00; background: #fef8e6; border: 1px solid #f0d870; border-radius: 5px; padding: 0.08rem 0.35rem; font-size: 0.72rem; font-weight: 600; }
+.raw-toggle { font-size: 0.73rem; color: var(--muted); cursor: pointer; text-decoration: underline; margin-top: 0.85rem; display: inline-block; }
+.raw-json { display: none; background: #1a1830; color: #a8d4f0; font-family: monospace; font-size: 0.7rem; border-radius: 11px; padding: 0.9rem; margin-top: 0.45rem; max-height: 280px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.6; }
+.empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+.empty-state .es-icon { font-size: 2.5rem; margin-bottom: 0.85rem; }
+.empty-state h3 { font-family: 'DM Serif Display', serif; color: var(--text); margin-bottom: 0.4rem; }
+
+/* Match motivation / kansen / blokkades */
+.match-motivation { font-size: 0.85rem; color: var(--text); line-height: 1.65; margin-bottom: 0.75rem; }
+.match-blockers { background: var(--danger); border: 1px solid var(--danger-border); border-radius: 9px; padding: 0.75rem 1rem; margin-top: 0.6rem; font-size: 0.82rem; color: #7a1010; }
+.match-blockers h5 { font-weight: 700; margin-bottom: 0.3rem; font-size: 0.75rem; text-transform: uppercase; }
+
+/* Section divider in results */
+.results-divider { font-family: 'DM Serif Display', serif; font-size: 0.92rem; color: var(--muted); margin: 1.5rem 0 0.85rem; padding-bottom: 0.45rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; }
+
+/* Validation error */
+.validation-errors { background: var(--danger); border: 1px solid var(--danger-border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+.validation-errors h4 { font-size: 0.82rem; color: #7a1010; margin-bottom: 0.45rem; font-weight: 700; }
+.validation-errors ul { padding-left: 1.2rem; font-size: 0.8rem; color: #7a1010; line-height: 1.6; }
+
+@media(max-width:600px) {
+  .main { padding: 1.25rem 0.85rem 3rem; }
+  .form-card, .progress-card, .result-card { padding: 1.35rem; }
+  header { padding: 0.85rem 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  HEADER                                                        -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="logo-mark">A</div>
+  <div class="header-text">
+    <h1>Subsidietool <span class="badge">v6</span></h1>
+    <p>Anh Thu Pham — fondsenanalyse & subsidiescan</p>
+  </div>
+</header>
+
+<!-- Pipeline progress bar -->
+<div class="pipeline-bar" id="pipelineBar">
+  <div class="pipe-step done" id="pipeKeys"><div class="pipe-dot"></div> API Keys</div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-step active" id="pipeProject"><div class="pipe-dot"></div> Project invoeren</div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-step" id="pipeCrawl"><div class="pipe-dot"></div> Fonds discovery + crawl</div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-step" id="pipeMatch"><div class="pipe-dot"></div> Match output</div>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  API KEYS (always visible)                                     -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<details class="keys-card" id="keysCard" open>
+  <summary>🔑 API Sleutels</summary>
+  <div class="keys-grid">
+    <div class="key-field">
+      <label>Claude API Key</label>
+      <div class="key-row">
+        <input type="password" id="claudeApiKey" placeholder="sk-ant-api03-...">
+        <button class="key-toggle" onclick="toggleKey('claudeApiKey',this)">toon</button>
+      </div>
+    </div>
+    <div class="key-field">
+      <label>Apify API Token</label>
+      <div class="key-row">
+        <input type="password" id="apifyToken" placeholder="apify_api_...">
+        <button class="key-toggle" onclick="toggleKey('apifyToken',this)">toon</button>
+      </div>
+    </div>
+    <div class="key-field">
+      <label>SerpAPI Key</label>
+      <div class="key-row">
+        <input type="password" id="serpApiKey" placeholder="serpapi_key_...">
+        <button class="key-toggle" onclick="toggleKey('serpApiKey',this)">toon</button>
+      </div>
+    </div>
+    <div class="key-field" style="display:flex;align-items:flex-end;">
+      <p style="font-size:0.72rem;color:var(--muted);line-height:1.5;">Keys worden alleen lokaal gebruikt en nooit opgeslagen. Sluit dit na invullen.</p>
+    </div>
+  </div>
+</details>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  STEP 1 — PROJECT INVOEREN                                    -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="flow-section active" id="sectionProject">
+
+  <div class="intro-card">
+    <h2>Subsidiescan</h2>
+    <p>Vul het klantprofiel en een fonds-URL in. De tool crawlt het fonds automatisch, analyseert regelingen en matcht ze tegen het project met een score van 0–100 per regeling.</p>
+    <div class="feature-pills">
+      <span class="pill">🏛️ Rechtsvorm-filter</span>
+      <span class="pill">🔍 SerpAPI discovery</span>
+      <span class="pill">🕷 Apify crawl</span>
+      <span class="pill">🤖 Claude match engine</span>
+      <span class="pill">🚫 Uitsluitingscheck</span>
+    </div>
+  </div>
+
+  <div id="projectFormSection">
+
+    <!-- Klantprofiel -->
+    <div class="form-card">
+      <div class="section-title"><span class="num">1</span> Klantprofiel</div>
+
+      <div class="field">
+        <label>Naam <span class="sublabel">(optioneel)</span></label>
+        <input type="text" id="naam" placeholder="bijv. naam van de kunstenaar">
+      </div>
+
+      <div class="field">
+        <label>Rechtsvorm</label>
+        <div class="tag-group" id="rechtsVormTags">
+          <span class="tag" data-val="individuele kunstenaar (zzp)">Individuele kunstenaar / ZZP</span>
+          <span class="tag" data-val="kunstenaarscollectief (informeel)">Kunstenaarscollectief (informeel)</span>
+          <span class="tag" data-val="stichting">Stichting</span>
+          <span class="tag" data-val="vereniging">Vereniging</span>
+          <span class="tag" data-val="bv/nv (commercieel)">BV / NV (commercieel)</span>
+          <span class="tag" data-val="student (geen kvk)">Student (geen KvK)</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Kunstdiscipline(s)</label>
+        <div class="tag-group" id="disciplineTags">
+          <span class="tag" data-val="beeldende kunst">Beeldende kunst</span>
+          <span class="tag" data-val="muziek">Muziek</span>
+          <span class="tag" data-val="theater">Theater</span>
+          <span class="tag" data-val="dans">Dans</span>
+          <span class="tag" data-val="film">Film</span>
+          <span class="tag" data-val="design">Design</span>
+          <span class="tag" data-val="architectuur">Architectuur</span>
+          <span class="tag" data-val="digitale cultuur">Digitale cultuur</span>
+          <span class="tag" data-val="mode/textiel">Mode / Textiel</span>
+          <span class="tag" data-val="literatuur">Literatuur</span>
+          <span class="tag" data-val="fotografie">Fotografie</span>
+          <span class="tag" data-val="erfgoed">Erfgoed</span>
+          <span class="tag" data-val="podiumkunsten">Podiumkunsten</span>
+          <span class="tag" data-val="interdisciplinair">Interdisciplinair</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Carrierefase</label>
+        <div class="tag-group" id="faseTags">
+          <span class="tag" data-val="startend (0-3 jaar)">Startend (0-3 jaar)</span>
+          <span class="tag" data-val="gevestigd (3-10 jaar)">Gevestigd (3-10 jaar)</span>
+          <span class="tag" data-val="ervaren (10+ jaar)">Ervaren (10+ jaar)</span>
+          <span class="tag" data-val="student">Student</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Woonplaats / stad</label>
+        <input type="text" id="regio" placeholder="bijv. Amsterdam, Den Haag, Rotterdam, Utrecht..." oninput="updateRegioInfo(this.value)">
+        <div class="regio-info" id="regioInfo"></div>
+      </div>
+
+      <div class="field">
+        <label>Culturele achtergrond <span class="sublabel">(optioneel)</span></label>
+        <input type="text" id="achtergrond" placeholder="bijv. Vietnamese roots, Surinaamse achtergrond...">
+      </div>
+    </div>
+
+    <!-- Portfolio & Documenten -->
+    <div class="form-card">
+      <div class="section-title"><span class="num">2</span> Portfolio & Documenten <span class="sublabel" style="font-family:'DM Sans',sans-serif;font-size:0.73rem;color:var(--muted);font-weight:400;">— optioneel maar aanbevolen</span></div>
+
+      <div class="field">
+        <label>Website of portfolio-URL</label>
+        <p class="field-note">AI leest de website en haalt vertoningsgeschiedenis, festivals en samenwerkingen op.</p>
+        <div class="url-row">
+          <input type="text" id="portfolioUrl" placeholder="https://www.kunstenaarnaam.nl">
+          <button class="url-fetch-btn" id="fetchBtn" onclick="fetchWebsite()">🌐 Lezen</button>
+        </div>
+        <div class="status-msg" id="urlStatus"></div>
+        <div class="context-preview" id="urlPreview"></div>
+      </div>
+
+      <div class="or-divider">of</div>
+
+      <div class="field">
+        <label>Projectplan, CV of portfolio uploaden of plakken</label>
+        <p class="field-note">Upload een PDF of .txt bestand, of plak tekst handmatig.</p>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileUpload').click()">
+          <div class="icon">📄</div>
+          <strong>Klik om PDF of .txt te uploaden</strong>
+          <p>of sleep een bestand hierheen — max 20MB</p>
+        </div>
+        <input type="file" id="fileUpload" accept=".pdf,.txt,.md" onchange="handleFileUpload(this)" style="display:none">
+        <span class="paste-toggle" onclick="togglePaste()">✏️ Liever tekst plakken?</span>
+        <div class="paste-area" id="pasteArea">
+          <textarea id="pasteText" placeholder="Plak hier de inhoud van je projectplan, CV of portfolio..."></textarea>
+          <button class="paste-save-btn" onclick="savePastedText()">✓ Opslaan als context</button>
+        </div>
+        <div class="status-msg" id="fileStatus"></div>
+        <div class="context-preview" id="filePreview"></div>
+      </div>
+    </div>
+
+    <!-- Het project -->
+    <div class="form-card">
+      <div class="section-title"><span class="num">3</span> Het project</div>
+
+      <div class="field">
+        <label>Beschrijf het project zo concreet mogelijk</label>
+        <textarea id="projectOmschrijving" placeholder="bijv. Een danser ontwikkelt een nieuw solowerk over culturele identiteit. Premiere gepland voor voorjaar 2026 in een theater in Rotterdam..."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Projectfase</label>
+        <div class="tag-group" id="faseProjTags">
+          <span class="tag" data-val="onderzoek/ontwikkeling">Onderzoek / ontwikkeling</span>
+          <span class="tag" data-val="voorproductie">Voorproductie</span>
+          <span class="tag" data-val="productie">Productie</span>
+          <span class="tag" data-val="presentatie">Presentatie</span>
+          <span class="tag" data-val="publicatie">Publicatie</span>
+          <span class="tag" data-val="talentontwikkeling">Talentontwikkeling</span>
+          <span class="tag" data-val="doorontwikkeling bestaand werk">Doorontwikkeling bestaand werk</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Waar wordt het project gepresenteerd?</label>
+        <div class="tag-group" id="locatieTags">
+          <span class="tag" data-val="Nederland">Nederland</span>
+          <span class="tag" data-val="internationaal/buitenland">Internationaal / Buitenland</span>
+          <span class="tag" data-val="online">Online</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Primair doel van het project</label>
+        <div class="tag-group" id="doelTags">
+          <span class="tag" data-val="artistieke ontwikkeling">Artistieke ontwikkeling</span>
+          <span class="tag" data-val="publieksbereik">Publieksbereik</span>
+          <span class="tag" data-val="onderzoek">Onderzoek</span>
+          <span class="tag" data-val="educatie">Educatie</span>
+          <span class="tag" data-val="participatie">Participatie</span>
+          <span class="tag" data-val="internationale samenwerking">Internationale samenwerking</span>
+          <span class="tag" data-val="talentontwikkeling">Talentontwikkeling</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Type activiteit</label>
+        <p class="field-note" style="margin-bottom:0.5rem;">Artistiek</p>
+        <div class="tag-group" id="typeArtistiekTags" style="margin-bottom:0.65rem;">
+          <span class="tag" data-val="tentoonstelling">Tentoonstelling</span>
+          <span class="tag" data-val="performance">Performance</span>
+          <span class="tag" data-val="installatie">Installatie</span>
+          <span class="tag" data-val="filmproductie">Filmproductie</span>
+          <span class="tag" data-val="publicatie/boek">Publicatie / boek</span>
+          <span class="tag" data-val="digitale productie">Digitale productie</span>
+          <span class="tag" data-val="architectonisch ontwerp">Architectonisch ontwerp</span>
+          <span class="tag" data-val="prototype">Prototype</span>
+        </div>
+        <p class="field-note" style="margin-bottom:0.5rem;">Participatief</p>
+        <div class="tag-group" id="typeParticipatTags" style="margin-bottom:0.65rem;">
+          <span class="tag" data-val="workshop">Workshop</span>
+          <span class="tag" data-val="educatief programma">Educatief programma</span>
+          <span class="tag" data-val="community project">Community project</span>
+          <span class="tag" data-val="publiek participatie traject">Publiek participatie traject</span>
+        </div>
+        <p class="field-note" style="margin-bottom:0.5rem;">Onderzoek</p>
+        <div class="tag-group" id="typeOnderzoekTags">
+          <span class="tag" data-val="artistiek onderzoek">Artistiek onderzoek</span>
+          <span class="tag" data-val="stedelijk onderzoek">Stedelijk onderzoek</span>
+          <span class="tag" data-val="materiaalonderzoek">Materiaalonderzoek</span>
+          <span class="tag" data-val="archiefonderzoek">Archiefonderzoek</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Maatschappelijke focus <span class="sublabel">(selecteer indien van toepassing)</span></label>
+        <div class="tag-group" id="sociaalTags">
+          <span class="tag" data-val="polarisatie/radicalisering">Polarisatie / radicalisering</span>
+          <span class="tag" data-val="trans-Atlantisch slavernij/erfgoed">Slavernij / erfgoed</span>
+          <span class="tag" data-val="klimaat/duurzaamheid">Klimaat / duurzaamheid</span>
+          <span class="tag" data-val="sociaal-maatschappelijk">Sociaal-maatschappelijk</span>
+          <span class="tag" data-val="inclusie/diversiteit">Inclusie / diversiteit</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Gevraagd subsidiebedrag</label>
+        <div class="tag-group" id="bedragTags">
+          <span class="tag" data-val="onder €1.000">Onder €1.000</span>
+          <span class="tag" data-val="€1.000–€5.000">€1.000 – €5.000</span>
+          <span class="tag" data-val="€5.000–€15.000">€5.000 – €15.000</span>
+          <span class="tag" data-val="€15.000+">€15.000+</span>
+          <span class="tag" data-val="onbekend">Onbekend</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Eerder subsidie ontvangen van: <span class="sublabel">— selecteer alles wat van toepassing is</span></label>
+        <div class="tag-group" id="ontvangenTags" style="margin-bottom:0.6rem;">
+          <span class="tag" data-val="Stimuleringsfonds" data-fonds="Stimuleringsfonds">Stimuleringsfonds</span>
+          <span class="tag" data-val="Mondriaanfonds" data-fonds="Mondriaanfonds">Mondriaanfonds</span>
+          <span class="tag" data-val="Fonds Podiumkunsten" data-fonds="Fonds Podiumkunsten">Fonds Podiumkunsten</span>
+          <span class="tag" data-val="Filmfonds" data-fonds="Filmfonds">Filmfonds</span>
+          <span class="tag" data-val="Nederlands Letterenfonds" data-fonds="Nederlands Letterenfonds">Nederlands Letterenfonds</span>
+          <span class="tag" data-val="Fonds voor Cultuurparticipatie" data-fonds="Fonds voor Cultuurparticipatie">Fonds voor Cultuurparticipatie</span>
+          <span class="tag" data-val="Gemeente subsidie" data-fonds="Gemeente">Gemeente</span>
+          <span class="tag" data-val="geen eerdere subsidies" data-fonds="">Nee</span>
+        </div>
+        <div id="regelingInputs" style="display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.45rem;"></div>
+        <input type="text" id="ontvangenAndere" placeholder="Anders: bijv. AFK, VSBFonds, Cultuurfonds...">
+      </div>
+
+      <div class="field">
+        <label>Extra context <span class="sublabel">(deadlines, partners, bijzonderheden etc.)</span></label>
+        <textarea id="extraContext" placeholder="bijv. deadline AFK is oktober, samenwerking met Eye Filmmuseum bevestigd..." style="min-height:65px;"></textarea>
+      </div>
+    </div>
+
+    <!-- Fonds URL -->
+    <div class="form-card">
+      <div class="section-title"><span class="num">4</span> Fonds om te analyseren</div>
+      <div class="field">
+        <label>Website URL van het fonds</label>
+        <p class="field-note">Gebruik de hoofdpagina of de subsidies-pagina. Bijv. https://www.stimuleringsfonds.nl/subsidies</p>
+        <input type="url" id="startUrl" placeholder="https://www.fondsnaam.nl/subsidies">
+      </div>
+      <div class="field">
+        <label>Crawl instellingen <span class="sublabel">(optioneel aanpassen)</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;margin-top:0.4rem;">
+          <div>
+            <label style="font-size:0.73rem;color:var(--muted);font-weight:500;">Max diepte</label>
+            <input type="text" id="crawlDepth" value="3" style="margin-top:0.2rem;">
+          </div>
+          <div>
+            <label style="font-size:0.73rem;color:var(--muted);font-weight:500;">Max pagina's</label>
+            <input type="text" id="crawlPages" value="30" style="margin-top:0.2rem;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Validation errors placeholder -->
+    <div class="validation-errors" id="validationErrors" style="display:none;">
+      <h4>Ontbrekende velden</h4>
+      <ul id="validationList"></ul>
+    </div>
+
+    <button class="cta-btn" onclick="runFullPipeline()">🚀 Start subsidiescan — crawl + match</button>
+  </div>
+
+</div><!-- /sectionProject -->
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  STEP 2 — CRAWL + MATCH PROGRESS                              -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="flow-section" id="sectionProgress">
+  <div class="progress-card">
+    <div class="progress-title">⟳ Bezig met analyseren...</div>
+    <div class="step-list">
+      <div class="step" id="step1"><span class="step-icon">🔍</span><div class="step-text"><div>SerpAPI zoeken</div><div class="step-detail" id="step1detail"></div></div><div class="spinner-sm" id="spin1" style="display:none;"></div></div>
+      <div class="step" id="step2"><span class="step-icon">🕷</span><div class="step-text"><div>Apify crawl starten & wachten</div><div class="step-detail" id="step2detail">Pollen elke 5 seconden...</div></div><div class="spinner-sm" id="spin2" style="display:none;"></div></div>
+      <div class="step" id="step3"><span class="step-icon">📥</span><div class="step-text"><div>Dataset ophalen & filteren</div><div class="step-detail" id="step3detail"></div></div><div class="spinner-sm" id="spin3" style="display:none;"></div></div>
+      <div class="step" id="step4"><span class="step-icon">🤖</span><div class="step-text"><div>Claude — regelingen analyseren</div><div class="step-detail" id="step4detail"></div></div><div class="spinner-sm" id="spin4" style="display:none;"></div></div>
+      <div class="step" id="step5"><span class="step-icon">⚡</span><div class="step-text"><div>Match engine — scoring & uitsluitingen</div><div class="step-detail" id="step5detail"></div></div><div class="spinner-sm" id="spin5" style="display:none;"></div></div>
+      <div class="step" id="step6"><span class="step-icon">✦</span><div class="step-text"><div>Resultaten opslaan</div><div class="step-detail" id="step6detail"></div></div></div>
+    </div>
+    <div class="log-box" id="logBox"></div>
+  </div>
+</div><!-- /sectionProgress -->
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  STEP 3 — RESULTS                                              -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="flow-section" id="sectionResults">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+    <div>
+      <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--primary);">Matchresultaten</h2>
+      <p style="font-size:0.78rem;color:var(--muted);margin-top:0.15rem;" id="resultMeta"></p>
+    </div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="copyResultJson()">📋 JSON kopieren</button>
+    </div>
+  </div>
+
+  <!-- Fonds banner -->
+  <div id="fondsBanner"></div>
+
+  <!-- Fonds score banner -->
+  <div id="fondsScoreBanner"></div>
+
+  <!-- Match result cards -->
+  <div id="matchCards"></div>
+
+  <span class="raw-toggle" onclick="toggleRaw('resultRawJson','resultRawToggle')" id="resultRawToggle">▸ Bekijk ruwe JSON</span>
+  <div class="raw-json" id="resultRawJson"></div>
+
+  <div style="margin-top:1.25rem;display:flex;gap:0.65rem;flex-wrap:wrap;">
+    <button class="reset-btn" onclick="editProject()">✏️ Project aanpassen</button>
+    <button class="reset-btn" style="color:#c04040;border-color:#e8b0b0;" onclick="resetAll()">🗑️ Opnieuw beginnen</button>
+  </div>
+
+</div><!-- /sectionResults -->
+
+</div><!-- /main -->
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!--  JAVASCRIPT                                                    -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════════════
+//  GLOBAL STATE
+// ════════════════════════════════════════════════════════════════
+const appState = {
+  fondsData:   null,   // crawl result
+  projectData: null,   // collected project form
+  matchResult: null    // match engine output
+};
+
+let websiteContext  = '';
+let documentContext = '';
+
+// ════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function stripHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function toggleKey(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? 'toon' : 'verberg';
+}
+
+function getKey(id) { return document.getElementById(id)?.value?.trim() || ''; }
+
+function getSelected(id) {
+  return [...document.querySelectorAll(`#${id} .tag.selected`)].map(t => t.dataset.val);
+}
+
+function markUncertain(str) {
+  return str.replace(/ONZEKER – handmatig controleren/g,
+    '<span class="uncertain">⚠ ONZEKER – controleer</span>');
+}
+
+function toggleRaw(jsonId, toggleId) {
+  const raw = document.getElementById(jsonId);
+  const tog = document.getElementById(toggleId);
+  const isOpen = raw.style.display === 'block';
+  raw.style.display = isOpen ? 'none' : 'block';
+  tog.textContent = isOpen ? '▸ Bekijk ruwe JSON' : '▾ Verberg ruwe JSON';
+}
+
+async function callClaude(claudeKey, messages, maxTokens = 4000) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'x-api-key': claudeKey
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      messages
+    })
+  });
+  const data = await resp.json();
+  if (!resp.ok || data.error) throw new Error(data.error?.message || `Claude fout ${resp.status}`);
+  return data.content?.map(c => c.text || '').join('') || '';
+}
+
+function parseJsonResponse(text) {
+  const m = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/(\{[\s\S]*\})/) || text.match(/(\[[\s\S]*\])/);
+  return JSON.parse(m ? m[1] : text);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  NAVIGATION — LINEAR FLOW
+// ════════════════════════════════════════════════════════════════
+function showSection(sectionId) {
+  document.querySelectorAll('.flow-section').forEach(s => s.classList.remove('active'));
+  document.getElementById(sectionId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function updatePipeline(activeStep) {
+  const steps = ['pipeKeys','pipeProject','pipeCrawl','pipeMatch'];
+  const order = { keys: 0, project: 1, crawl: 2, match: 3 };
+  const activeIdx = order[activeStep] ?? 1;
+  steps.forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = 'pipe-step' + (i < activeIdx ? ' done' : i === activeIdx ? ' active' : '');
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  LOGGING & PROGRESS STEPS
+// ════════════════════════════════════════════════════════════════
+function log(msg, type = '') {
+  const box = document.getElementById('logBox');
+  if (!box) return;
+  const ts = new Date().toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  const cls = { ok:'log-ok', warn:'log-warn', err:'log-err' }[type] || '';
+  box.innerHTML += `<div><span class="log-ts">[${ts}]</span><span class="${cls}">${escHtml(msg)}</span></div>`;
+  box.scrollTop = box.scrollHeight;
+}
+
+const STEP_ICONS = { 1:'🔍', 2:'🕷', 3:'📥', 4:'🤖', 5:'⚡', 6:'✦' };
+function setStep(n, state, detail = '') {
+  const step = document.getElementById(`step${n}`);
+  const spin = document.getElementById(`spin${n}`);
+  if (!step) return;
+  step.className = 'step ' + state;
+  if (detail) document.getElementById(`step${n}detail`).textContent = detail;
+  if (spin) spin.style.display = state === 'active' ? 'block' : 'none';
+  step.querySelector('.step-icon').textContent =
+    state === 'done' ? '✅' : state === 'error' ? '❌' : STEP_ICONS[n];
+}
+
+// ════════════════════════════════════════════════════════════════
+//  VALIDATION (requirement 6)
+// ════════════════════════════════════════════════════════════════
+function validateProjectData(pd) {
+  const errors = [];
+  if (!pd.projectOmschrijving && pd.disciplines.length === 0)
+    errors.push('Vul minimaal een projectomschrijving of discipline in.');
+  if (pd.rechtsvorm.length === 0)
+    errors.push('Selecteer een rechtsvorm (nodig voor uitsluitingscheck).');
+  return errors;
+}
+
+function validateFondsData(fd) {
+  const errors = [];
+  if (!fd) { errors.push('Geen fondsdata beschikbaar.'); return errors; }
+  if (!fd.fonds_naam) errors.push('Fonds naam ontbreekt in crawlresultaat.');
+  if (!fd.regelingen || fd.regelingen.length === 0) errors.push('Geen regelingen gevonden in fondsdata.');
+  return errors;
+}
+
+function validateKeys() {
+  const errors = [];
+  if (!getKey('claudeApiKey')) errors.push('Claude API key ontbreekt.');
+  if (!getKey('apifyToken')) errors.push('Apify API token ontbreekt.');
+  if (!getKey('serpApiKey')) errors.push('SerpAPI key ontbreekt.');
+  return errors;
+}
+
+function showValidationErrors(errors) {
+  const container = document.getElementById('validationErrors');
+  const list = document.getElementById('validationList');
+  if (errors.length === 0) { container.style.display = 'none'; return false; }
+  list.innerHTML = errors.map(e => `<li>${escHtml(e)}</li>`).join('');
+  container.style.display = 'block';
+  container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return true;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CRAWL LOGIC (requirement 4 — new SerpAPI queries)
+// ════════════════════════════════════════════════════════════════
+const URL_KEYWORDS = ['aanvragen','richtlijn','regeling','subsidie','voorwaarden','criteria','download','documenten','pdf','aanvraag','open','fonds','programma','indienen','doelgroep'];
+
+function isRelevantPage(item) {
+  const url = (item.url || '').toLowerCase();
+  return URL_KEYWORDS.some(kw => url.includes(kw));
+}
+
+function isPdf(item) {
+  const url = (item.url || '').toLowerCase();
+  const ct = (item.contentType || '').toLowerCase();
+  return url.includes('.pdf') || ct.includes('pdf');
+}
+
+async function searchWithSerpApi(domain, serpApiKey) {
+  // Requirement 4: expanded SerpAPI queries
+  const queries = [
+    `site:${domain} regeling`,
+    `site:${domain} subsidie`,
+    `site:${domain} deadline`,
+    `site:${domain} hoogte aanvraagbedrag`,
+    `site:${domain} opent sluit`,
+    `site:${domain} richtlijnen`,
+    `site:${domain} wie kan indienen`,
+    `site:${domain} aanvraagvoorwaarden`,
+    `site:${domain} uitsluitingscriteria`,
+    `site:${domain} individuele makers`,
+    `site:${domain} instellingen`
+  ];
+  const urls = new Set();
+  for (const q of queries) {
+    try {
+      const resp = await fetch(
+        `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(q)}&api_key=${serpApiKey}&num=10`
+      );
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      (data.organic_results || []).forEach(r => {
+        if (r.link && r.link.includes(domain)) urls.add(r.link);
+      });
+      log(`SerpAPI: "${q}" — ${(data.organic_results || []).filter(r => r.link?.includes(domain)).length} hits`);
+    } catch(e) { /* continue */ }
+  }
+  return Array.from(urls).slice(0, 20);
+}
+
+// Requirement 5: updated JSON schema for regelingen
+function buildCrawlPrompt(bundle, sourceUrl) {
+  return `Je bent een subsidie-analist gespecialiseerd in Nederlandse kunst- en cultuurfondsen.
+Gebruik uitsluitend de aangeleverde webpagina- en PDF-teksten.
+Verzin geen informatie.
+Als iets niet expliciet in de bronnen staat, schrijf: "ONZEKER – handmatig controleren".
+
+Doel:
+Maak een eerste, redelijk accurate filtering van regelingen van dit fonds: ${sourceUrl}
+Focus sterk op:
+- openstelling / deadline
+- min en max bedrag
+- discipline / doelgroep
+- projectfase
+- harde criteria
+- uitsluitingscriteria (heel belangrijk)
+- WIE mag aanvragen (rechtsvorm: individueel, stichting, collectief, etc.)
+- WIE is UITGESLOTEN van aanvragen
+
+Extractieregels:
+- Zoek expliciet naar woorden: "opent", "open", "sluit", "gesloten", "deadline", "indienen", "aanvraagperiode".
+- Zoek expliciet naar bedragen met € en woorden: "budget", "subsidiebedrag", "maximaal", "minimum".
+- Als je een bedrag ziet dat een totaalbudget lijkt (bijv. "€ 650.000 budget subsidietijdvak"), zet dit NIET als max_bedrag tenzij de bron zegt dat dit het max per aanvraag is.
+- Als openstelling/deadline alleen als "opent 25 februari 15:00" staat, zet dat exact zo in deadline/openstelling.
+- Zoek expliciet naar wie mag indienen: "individuele kunstenaars", "stichtingen", "instellingen", "collectieven".
+- Zoek expliciet naar wie NIET mag indienen: "niet voor individuen", "alleen voor instellingen", "uitgesloten".
+
+Geef uitsluitend JSON output — geen uitleg, geen markdown buiten de JSON, geen commentaar.
+Begin direct met { en eindig met }.
+
+JSON schema:
+{
+  "fonds_naam": "string",
+  "fonds_url": "string",
+  "fonds_omschrijving": "string (max 2 zinnen)",
+  "regelingen": [
+    {
+      "naam": "string",
+      "openstelling": "string",
+      "deadline": "string",
+      "min_bedrag": "string",
+      "max_bedrag": "string",
+      "discipline": "string",
+      "doelgroep": "string",
+      "projectfase": "string",
+      "toegestane_aanvragers": ["string (bijv. individuele kunstenaars, stichtingen, collectieven)"],
+      "uitgesloten_aanvragers": ["string (bijv. commerciele bedrijven, individuen zonder kvk)"],
+      "harde_criteria": ["string"],
+      "uitsluitingscriteria": ["string"],
+      "evidence": [
+        { "url": "string", "quote": "string (max 25 woorden)" }
+      ]
+    }
+  ]
+}
+
+BRONNEN:
+${bundle}`;
+}
+
+async function executeCrawl(startUrl, claudeKey, apifyToken, serpApiKey) {
+  // Step 1 — SerpAPI
+  setStep(1, 'active', 'Zoeken via SerpAPI...');
+  log('SerpAPI zoekopdrachten uitvoeren (11 queries)...');
+  const domain = new URL(startUrl).hostname;
+  const serpUrls = await searchWithSerpApi(domain, serpApiKey);
+  log(`${serpUrls.length} unieke URLs gevonden via SerpAPI`, 'ok');
+  setStep(1, 'done', `${serpUrls.length} URLs gevonden`);
+
+  // Step 2 — Apify start + poll
+  setStep(2, 'active', 'Apify actor starten...');
+  log(`Apify crawl starten voor: ${startUrl}`);
+
+  const runResp = await fetch(
+    `https://api.apify.com/v2/acts/thu1710~my-actor/runs?token=${apifyToken}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startUrls: serpUrls.map(u => ({ url: u })) })
+    }
+  );
+  if (!runResp.ok) throw new Error(`Apify start mislukt (${runResp.status}): ${await runResp.text()}`);
+  const runData = await runResp.json();
+  const runId = runData.data?.id;
+  const datasetId = runData.data?.defaultDatasetId;
+  if (!runId) throw new Error('Geen run ID ontvangen van Apify');
+  log(`Run gestart — ID: ${runId}`, 'ok');
+
+  let status = 'RUNNING';
+  let pollCount = 0;
+  while (['RUNNING','READY','ABORTING'].includes(status)) {
+    await sleep(5000);
+    pollCount++;
+    const pollData = await (await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apifyToken}`)).json();
+    status = pollData.data?.status;
+    const pages = pollData.data?.stats?.httpRequestsFinished ?? '?';
+    setStep(2, 'active', `Status: ${status} — ${pages} pagina's (poll ${pollCount})`);
+    log(`Poll ${pollCount}: ${status} — ${pages} pagina's`);
+    if (pollCount >= 72) throw new Error('Timeout: crawl duurde langer dan 6 minuten');
+  }
+  if (status !== 'SUCCEEDED') throw new Error(`Crawl beeindigd met status: ${status}`);
+  setStep(2, 'done', `Succesvol — ${pollCount * 5}s`);
+
+  // Step 3 — Dataset
+  setStep(3, 'active', 'Dataset ophalen...');
+  const itemsData = await (await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyToken}&format=json&limit=200&clean=true`)).json();
+  if (!Array.isArray(itemsData)) throw new Error('Onverwacht dataset formaat');
+  log(`${itemsData.length} items ontvangen`);
+  const relevantPages = itemsData.filter(i => !isPdf(i) && isRelevantPage(i)).slice(0, 12);
+  const pdfItems      = itemsData.filter(i => isPdf(i)).slice(0, 5);
+  const allFiltered   = [...relevantPages, ...pdfItems];
+  if (allFiltered.length === 0) allFiltered.push(...itemsData.slice(0, 8));
+  setStep(3, 'done', `${relevantPages.length} pagina's + ${pdfItems.length} PDF's`);
+  log(`Gefilterd: ${relevantPages.length} pagina's, ${pdfItems.length} PDF's`, 'ok');
+
+  // Step 4 — Claude analysis
+  setStep(4, 'active', 'Prompt opbouwen...');
+  const MAX_CHARS = 10000;
+  const bundle = allFiltered.map((item, i) => {
+    const raw = item.markdown || item.text || item.pageContent || item.html || '';
+    const plain = stripHtml(raw);
+    return `--- BRON ${i + 1}: ${item.url} ---\n${(plain || '').substring(0, MAX_CHARS)}`;
+  }).join('\n\n');
+  log(`Bundle: ~${Math.round(bundle.length / 1000)}k tekens`);
+  setStep(4, 'active', 'Claude aanroepen...');
+  const rawText = await callClaude(claudeKey, [{ role: 'user', content: buildCrawlPrompt(bundle, startUrl) }], 5000);
+  let parsed;
+  try { parsed = parseJsonResponse(rawText); } catch(e) { throw new Error('JSON parse mislukt: ' + e.message); }
+  log(`Analyse klaar — ${parsed.regelingen?.length || 0} regelingen gevonden`, 'ok');
+  setStep(4, 'done', `${parsed.regelingen?.length || 0} regelingen gevonden`);
+
+  return { fondsData: parsed, pageCount: allFiltered.length };
+}
+
+// ════════════════════════════════════════════════════════════════
+//  MATCH ENGINE (requirement 2, 3, 5, 6 — separated from crawl)
+// ════════════════════════════════════════════════════════════════
+
+/**
+ * Check uitsluitingen (priority 1, requirement 3).
+ * Returns { is_uitgesloten: boolean, reden: string }
+ */
+function checkUitsluitingen(regeling, projectData) {
+  const projectRechtsvorm = (projectData.rechtsvorm || []).map(r => r.toLowerCase());
+  if (projectRechtsvorm.length === 0) return { is_uitgesloten: false, reden: '' };
+
+  // Check uitgesloten_aanvragers
+  const uitgesloten = (regeling.uitgesloten_aanvragers || []).map(a => a.toLowerCase());
+  for (const rv of projectRechtsvorm) {
+    for (const excl of uitgesloten) {
+      if (excl.includes(rv) || rv.includes(excl) ||
+          (rv.includes('zzp') && (excl.includes('individu') || excl.includes('natuurlijk persoon'))) ||
+          (rv.includes('stichting') && excl.includes('stichting')) ||
+          (rv.includes('bv') && (excl.includes('commerci') || excl.includes('bv'))) ||
+          (rv.includes('student') && (excl.includes('student') || excl.includes('zonder kvk')))) {
+        return { is_uitgesloten: true, reden: `Rechtsvorm "${rv}" staat op de uitsluitingslijst: "${excl}"` };
+      }
+    }
+  }
+
+  // Check toegestane_aanvragers — if specified and project doesn't match
+  const toegestaan = (regeling.toegestane_aanvragers || []).map(a => a.toLowerCase());
+  if (toegestaan.length > 0) {
+    const isMatched = projectRechtsvorm.some(rv =>
+      toegestaan.some(ta =>
+        ta.includes(rv) || rv.includes(ta) ||
+        (rv.includes('zzp') && (ta.includes('individu') || ta.includes('kunstenaar') || ta.includes('maker'))) ||
+        (rv.includes('stichting') && ta.includes('stichting')) ||
+        (rv.includes('stichting') && ta.includes('instelling')) ||
+        (rv.includes('vereniging') && (ta.includes('vereniging') || ta.includes('instelling'))) ||
+        (rv.includes('bv') && (ta.includes('bv') || ta.includes('commerci') || ta.includes('bedrijf') || ta.includes('instelling'))) ||
+        (rv.includes('collectief') && (ta.includes('collectief') || ta.includes('groep'))) ||
+        (rv.includes('student') && ta.includes('student'))
+      )
+    );
+    if (!isMatched) {
+      return { is_uitgesloten: true, reden: `Rechtsvorm "${projectRechtsvorm.join(', ')}" niet gevonden in toegestane aanvragers: "${toegestaan.join(', ')}"` };
+    }
+  }
+
+  return { is_uitgesloten: false, reden: '' };
+}
+
+/**
+ * Match engine: runs Claude to score each regeling 0-100 (requirement 2, 6).
+ * Uitsluitingen are checked BEFORE Claude call (requirement 3).
+ */
+async function matchEngine(fondsData, projectData, claudeKey) {
+  const regelingen = fondsData.regelingen || [];
+  const results = [];
+
+  // Phase 1: Pre-check uitsluitingen (priority 1, requirement 3)
+  const preChecked = regelingen.map(r => {
+    const uitsluiting = checkUitsluitingen(r, projectData);
+    return { regeling: r, ...uitsluiting };
+  });
+
+  const excluded = preChecked.filter(p => p.is_uitgesloten);
+  const eligible = preChecked.filter(p => !p.is_uitgesloten);
+
+  log(`Uitsluitingscheck: ${excluded.length} uitgesloten, ${eligible.length} geschikt`, excluded.length > 0 ? 'warn' : 'ok');
+
+  // Add excluded with score 0
+  for (const ex of excluded) {
+    results.push({
+      regeling_naam: ex.regeling.naam,
+      match_score: 0,
+      is_project_uitgesloten: true,
+      uitsluitingsreden: ex.reden,
+      doelgroep: ex.regeling.doelgroep || '',
+      toegestane_aanvragers: ex.regeling.toegestane_aanvragers || [],
+      uitgesloten_aanvragers: ex.regeling.uitgesloten_aanvragers || [],
+      match_motivatie: `UITGESLOTEN: ${ex.reden}`,
+      kansen: [],
+      blokkades: [ex.reden],
+      aanbeveling: 'Deze regeling is niet geschikt vanwege uitsluitingscriteria.'
+    });
+  }
+
+  // Phase 2: Score eligible regelingen via Claude
+  if (eligible.length > 0) {
+    const regelingenJson = JSON.stringify(eligible.map(p => ({
+      naam: p.regeling.naam,
+      openstelling: p.regeling.openstelling,
+      deadline: p.regeling.deadline,
+      min_bedrag: p.regeling.min_bedrag,
+      max_bedrag: p.regeling.max_bedrag,
+      discipline: p.regeling.discipline,
+      doelgroep: p.regeling.doelgroep,
+      projectfase: p.regeling.projectfase,
+      toegestane_aanvragers: p.regeling.toegestane_aanvragers,
+      uitgesloten_aanvragers: p.regeling.uitgesloten_aanvragers,
+      harde_criteria: p.regeling.harde_criteria,
+      uitsluitingscriteria: p.regeling.uitsluitingscriteria
+    })), null, 2);
+
+    const matchPrompt = `Je bent een subsidie-analist. Match het opgegeven project tegen de regelingen van ${fondsData.fonds_naam}.
+Geef ELKE regeling een match_score van 0 tot 100 (niet HOOG/MIDDEL/LAAG, maar een exact getal).
+
+Scorebereik:
+- 80-100: Uitstekende match, geen blokkades
+- 60-79: Goede match, kleine risico's
+- 40-59: Matige match, meerdere onzekerheden
+- 20-39: Zwakke match, significante bezwaren
+- 1-19: Zeer onwaarschijnlijk
+- 0: Uitgesloten (deze zijn al verwijderd, gebruik 0 niet)
+
+PROJECT:
+- Naam: ${projectData.naam || 'niet opgegeven'}
+- Rechtsvorm: ${projectData.rechtsvorm?.join(', ') || 'niet opgegeven'}
+- Disciplines: ${projectData.disciplines?.join(', ') || 'niet opgegeven'}
+- Carrierefase: ${projectData.fase?.join(', ') || 'niet opgegeven'}
+- Woonplaats: ${projectData.regio || 'niet opgegeven'}
+- Projectomschrijving: ${projectData.projectOmschrijving || 'niet opgegeven'}
+- Primair doel: ${projectData.doel?.join(', ') || 'niet opgegeven'}
+- Projectfase: ${projectData.faseProj?.join(', ') || 'niet opgegeven'}
+- Type activiteit: ${projectData.typeProject?.join(', ') || 'niet opgegeven'}
+- Maatschappelijke focus: ${projectData.sociaal?.join(', ') || 'geen'}
+- Gevraagd bedrag: ${projectData.bedrag?.join(', ') || 'onbekend'}
+${projectData.alleOntvangen?.length > 0 ? '- Eerder ontvangen: ' + projectData.alleOntvangen.join(', ') : ''}
+${projectData.websiteContext ? '\nPORTFOLIO/WEBSITE:\n' + projectData.websiteContext.substring(0, 1000) : ''}
+
+REGELINGEN (al voorgefilterd op rechtsvorm):
+${regelingenJson}
+
+Geef uitsluitend JSON output. Begin met [ en eindig met ].
+
+JSON schema per regeling:
+[
+  {
+    "regeling_naam": "string",
+    "match_score": number (0-100),
+    "doelgroep": "string",
+    "toegestane_aanvragers": ["string"],
+    "uitgesloten_aanvragers": ["string"],
+    "is_project_uitgesloten": false,
+    "uitsluitingsreden": "",
+    "match_motivatie": "string (2-4 zinnen)",
+    "kansen": ["string"],
+    "blokkades": ["string (harde criteria/risico's die het project raken)"],
+    "aanbeveling": "string (1 zin concreet advies)"
+  }
+]
+
+Regels:
+- Wees eerlijk over blokkades.
+- Als deadline verstreken of ONZEKER: benoem dit en verlaag score.
+- Score is een getal, geen tekst.`;
+
+    const rawText = await callClaude(claudeKey, [{ role:'user', content: matchPrompt }], 4000);
+    let claudeMatches;
+    try {
+      const m = rawText.match(/```json\s*([\s\S]*?)\s*```/) || rawText.match(/(\[[\s\S]*\])/);
+      claudeMatches = JSON.parse(m ? m[1] : rawText);
+    } catch(e) { throw new Error('Match JSON parse mislukt: ' + e.message); }
+
+    // Merge Claude results with schema fields
+    for (const cm of claudeMatches) {
+      const score = typeof cm.match_score === 'number' ? Math.max(0, Math.min(100, cm.match_score)) : 0;
+      results.push({
+        regeling_naam: cm.regeling_naam || '',
+        match_score: score,
+        doelgroep: cm.doelgroep || '',
+        toegestane_aanvragers: cm.toegestane_aanvragers || [],
+        uitgesloten_aanvragers: cm.uitgesloten_aanvragers || [],
+        is_project_uitgesloten: false,
+        uitsluitingsreden: '',
+        match_motivatie: cm.match_motivatie || '',
+        kansen: cm.kansen || [],
+        blokkades: cm.blokkades || [],
+        aanbeveling: cm.aanbeveling || ''
+      });
+    }
+  }
+
+  return results;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  FULL PIPELINE (requirement 1 — linear flow)
+// ════════════════════════════════════════════════════════════════
+async function runFullPipeline() {
+  // Collect & validate
+  const pd = collectProjectData();
+  const startUrl = getKey('startUrl');
+
+  const keyErrors = validateKeys();
+  const projErrors = validateProjectData(pd);
+  const allErrors = [...keyErrors, ...projErrors];
+  if (!startUrl) allErrors.push('Vul een website URL in van het fonds.');
+  if (showValidationErrors(allErrors)) return;
+
+  document.getElementById('validationErrors').style.display = 'none';
+  appState.projectData = pd;
+
+  // Switch to progress view
+  showSection('sectionProgress');
+  updatePipeline('crawl');
+
+  try {
+    // Phase 1: Crawl
+    const { fondsData, pageCount } = await executeCrawl(startUrl, getKey('claudeApiKey'), getKey('apifyToken'), getKey('serpApiKey'));
+    appState.fondsData = fondsData;
+
+    // Validate crawl result
+    const fondsErrors = validateFondsData(fondsData);
+    if (fondsErrors.length > 0) throw new Error(fondsErrors.join('; '));
+
+    // Phase 2: Match engine
+    setStep(5, 'active', 'Match engine starten...');
+    updatePipeline('match');
+    log('Match engine gestart — uitsluitingscheck + scoring...');
+
+    const matchResults = await matchEngine(fondsData, pd, getKey('claudeApiKey'));
+    appState.matchResult = matchResults;
+
+    log(`Match klaar — ${matchResults.length} regelingen gescoord`, 'ok');
+    setStep(5, 'done', `${matchResults.length} regelingen gescoord`);
+
+    // Phase 3: Render
+    setStep(6, 'active', 'Resultaten opbouwen...');
+    renderResults(fondsData, matchResults, startUrl, pageCount);
+    setStep(6, 'done', 'Gereed');
+
+    await sleep(400);
+    showSection('sectionResults');
+    updatePipeline('match');
+
+  } catch(err) {
+    log(`FOUT: ${err.message}`, 'err');
+    [1,2,3,4,5,6].forEach(n => {
+      if (document.getElementById(`step${n}`)?.classList.contains('active'))
+        setStep(n, 'error', err.message);
+    });
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RENDERING — COMBINED RESULTS
+// ════════════════════════════════════════════════════════════════
+function scoreClass(score) {
+  if (score >= 70) return 'score-high';
+  if (score >= 40) return 'score-mid';
+  if (score > 0) return 'score-low';
+  return 'score-excluded';
+}
+
+function scoreLabel(score, isExcluded) {
+  if (isExcluded) return 'UITGESLOTEN';
+  if (score >= 70) return `${score} — HOOG`;
+  if (score >= 40) return `${score} — MIDDEL`;
+  return `${score} — LAAG`;
+}
+
+function renderResults(fondsData, matches, sourceUrl, pageCount) {
+  const now = new Date().toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('resultMeta').textContent =
+    `${now} — ${fondsData.fonds_naam} × ${appState.projectData.naam || 'project'} — ${matches.length} regelingen — ${pageCount} bronpagina's`;
+
+  // Fonds banner
+  document.getElementById('fondsBanner').innerHTML = `
+    <div class="fonds-banner">
+      <div class="fonds-banner-icon">🏛</div>
+      <div class="fonds-banner-text">
+        <h3>${escHtml(fondsData.fonds_naam || 'Onbekend fonds')}</h3>
+        <p>${escHtml(fondsData.fonds_omschrijving || '')}</p>
+      </div>
+      <div class="fonds-banner-url"><a href="${escHtml(fondsData.fonds_url || sourceUrl)}" target="_blank" rel="noopener">${escHtml(fondsData.fonds_url || sourceUrl)} ↗</a></div>
+    </div>`;
+
+  // Fonds score = highest regeling score (requirement 2)
+  const fondsScore = matches.reduce((max, m) => Math.max(max, m.match_score || 0), 0);
+  document.getElementById('fondsScoreBanner').innerHTML = `
+    <div class="fonds-score-banner">
+      <div class="fonds-score-num">${fondsScore}</div>
+      <div class="fonds-score-label">
+        <strong>Fondsscore (hoogste regeling)</strong>
+        ${fondsScore >= 70 ? 'Er zijn regelingen met een goede match.' : fondsScore >= 40 ? 'Matige match — controleer details.' : fondsScore > 0 ? 'Lage match — weinig geschikt.' : 'Geen geschikte regelingen gevonden.'}
+      </div>
+    </div>`;
+
+  // Sort: highest score first, excluded at bottom
+  const sorted = [...matches].sort((a, b) => {
+    if (a.is_project_uitgesloten && !b.is_project_uitgesloten) return 1;
+    if (!a.is_project_uitgesloten && b.is_project_uitgesloten) return -1;
+    return (b.match_score || 0) - (a.match_score || 0);
+  });
+
+  const eligible = sorted.filter(m => !m.is_project_uitgesloten);
+  const excluded = sorted.filter(m => m.is_project_uitgesloten);
+
+  let html = '';
+
+  if (eligible.length > 0) {
+    html += `<div class="results-divider">✓ Geschikte regelingen (${eligible.length})</div>`;
+    html += eligible.map((m, i) => renderMatchCard(m, i, 'elig')).join('');
+  }
+
+  if (excluded.length > 0) {
+    html += `<div class="results-divider">🚫 Uitgesloten regelingen (${excluded.length})</div>`;
+    html += excluded.map((m, i) => renderMatchCard(m, eligible.length + i, 'excl')).join('');
+  }
+
+  if (sorted.length === 0) {
+    html = '<div class="empty-state"><div class="es-icon">🔍</div><h3>Geen regelingen gevonden</h3><p>Probeer een specifiekere fonds-URL.</p></div>';
+  }
+
+  document.getElementById('matchCards').innerHTML = html;
+
+  // Open first eligible card
+  if (eligible.length > 0) toggleResultCard('elig', 0);
+
+  // Raw JSON
+  document.getElementById('resultRawJson').textContent = JSON.stringify({
+    fonds: fondsData,
+    matches: matches
+  }, null, 2);
+}
+
+function renderMatchCard(m, i, prefix) {
+  const sc = scoreClass(m.match_score);
+  const sl = scoreLabel(m.match_score, m.is_project_uitgesloten);
+  const isExcluded = m.is_project_uitgesloten;
+
+  // Find original regeling for evidence & criteria
+  const origRegeling = (appState.fondsData?.regelingen || []).find(r => r.naam === m.regeling_naam) || {};
+
+  const criteria = (origRegeling.harde_criteria||[]).map(c =>
+    `<div class="criteria-item hard"><span class="ci-dot">→</span><span>${markUncertain(escHtml(c))}</span></div>`).join('');
+  const excl = (origRegeling.uitsluitingscriteria||[]).map(c =>
+    `<div class="criteria-item excl"><span class="ci-dot">✕</span><span>${markUncertain(escHtml(c))}</span></div>`).join('');
+  const evidence = (origRegeling.evidence||[]).map(ev =>
+    `<div class="evidence-item"><a class="evidence-url" href="${escHtml(ev.url)}" target="_blank">${escHtml(ev.url)}</a><div class="evidence-quote">"${markUncertain(escHtml(ev.quote||''))}"</div></div>`).join('');
+
+  const kansen = (m.kansen||[]).map(k=>`<li style="margin:0.15rem 0;font-size:0.82rem;">${escHtml(k)}</li>`).join('');
+  const blokkades = (m.blokkades||[]).map(b=>`<li style="margin:0.15rem 0;font-size:0.82rem;">${escHtml(b)}</li>`).join('');
+
+  return `
+  <div class="regeling-card${isExcluded ? ' excluded' : ''}">
+    <div class="regeling-header" onclick="toggleResultCard('${prefix}',${i})" id="${prefix}hdr${i}">
+      <div class="regeling-name">${escHtml(m.regeling_naam||'Onbekende regeling')}</div>
+      <span class="score-badge ${sc}">${sl}</span>
+      <span class="chevron" id="${prefix}chev${i}">▾</span>
+    </div>
+    <div class="regeling-body" id="${prefix}body${i}">
+      ${isExcluded ? `
+        <div class="exclusion-banner">
+          <div class="excl-icon">🚫</div>
+          <div class="excl-text">
+            <strong>Uitgesloten — score 0</strong>
+            ${escHtml(m.uitsluitingsreden || 'Reden onbekend')}
+          </div>
+        </div>` : ''}
+      <p class="match-motivation">${escHtml(m.match_motivatie||'')}</p>
+      <div class="data-grid">
+        <div class="data-cell highlight"><div class="dc-label">Openstelling</div><div class="dc-value">${markUncertain(escHtml(origRegeling.openstelling||'—'))}</div></div>
+        <div class="data-cell highlight"><div class="dc-label">Deadline</div><div class="dc-value">${markUncertain(escHtml(origRegeling.deadline||'—'))}</div></div>
+        <div class="data-cell"><div class="dc-label">Min. bedrag</div><div class="dc-value">${markUncertain(escHtml(origRegeling.min_bedrag||'—'))}</div></div>
+        <div class="data-cell"><div class="dc-label">Max. bedrag</div><div class="dc-value">${markUncertain(escHtml(origRegeling.max_bedrag||'—'))}</div></div>
+        <div class="data-cell"><div class="dc-label">Discipline</div><div class="dc-value">${markUncertain(escHtml(origRegeling.discipline||'—'))}</div></div>
+        <div class="data-cell"><div class="dc-label">Doelgroep</div><div class="dc-value">${markUncertain(escHtml(m.doelgroep || origRegeling.doelgroep||'—'))}</div></div>
+        <div class="data-cell"><div class="dc-label">Toegestane aanvragers</div><div class="dc-value">${markUncertain(escHtml((m.toegestane_aanvragers||origRegeling.toegestane_aanvragers||[]).join(', ')||'—'))}</div></div>
+        <div class="data-cell"><div class="dc-label">Uitgesloten aanvragers</div><div class="dc-value">${markUncertain(escHtml((m.uitgesloten_aanvragers||origRegeling.uitgesloten_aanvragers||[]).join(', ')||'—'))}</div></div>
+      </div>
+      ${!isExcluded && kansen ? `<div style="margin-bottom:0.65rem;"><div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.35rem;">✓ Kansen</div><ul style="padding-left:1.1rem;">${kansen}</ul></div>` : ''}
+      ${blokkades ? `<div class="match-blockers"><h5>⚠️ Blokkades / risico's</h5><ul style="padding-left:1rem;">${blokkades}</ul></div>` : ''}
+      ${criteria ? `<div class="criteria-section" style="margin-top:0.75rem;"><h4>Harde criteria</h4><div class="criteria-list">${criteria}</div></div>` : ''}
+      ${excl ? `<div class="criteria-section"><h4>⚠️ Uitsluitingscriteria</h4><div class="criteria-list">${excl}</div></div>` : ''}
+      ${evidence ? `<div class="evidence-section"><h4>Bronvermelding</h4>${evidence}</div>` : ''}
+      ${m.aanbeveling ? `<div style="margin-top:0.75rem;padding:0.65rem 0.9rem;background:#f3f1fc;border-radius:9px;font-size:0.82rem;color:var(--primary);font-weight:600;">💡 ${escHtml(m.aanbeveling)}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function toggleResultCard(prefix, i) {
+  const body = document.getElementById(`${prefix}body${i}`);
+  const chev = document.getElementById(`${prefix}chev${i}`);
+  const hdr  = document.getElementById(`${prefix}hdr${i}`);
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (chev) chev.classList.toggle('open', !isOpen);
+  if (hdr)  hdr.classList.toggle('open', !isOpen);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  PROJECT FORM LOGIC
+// ════════════════════════════════════════════════════════════════
+document.querySelectorAll('.tag-group').forEach(group => {
+  group.querySelectorAll('.tag').forEach(tag => {
+    tag.addEventListener('click', () => tag.classList.toggle('selected'));
+  });
+});
+document.querySelectorAll('#ontvangenTags .tag').forEach(tag => {
+  tag.addEventListener('click', updateRegelingInputs);
+});
+
+function updateRegelingInputs() {
+  const container = document.getElementById('regelingInputs');
+  container.innerHTML = '';
+  document.querySelectorAll('#ontvangenTags .tag.selected').forEach(tag => {
+    const fonds = tag.dataset.fonds;
+    if (!fonds) return;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:0.45rem;';
+    const lbl = document.createElement('span');
+    lbl.textContent = fonds + ':';
+    lbl.style.cssText = 'font-size:0.76rem;font-weight:600;color:var(--primary);white-space:nowrap;min-width:155px;';
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.placeholder = 'Welke regeling? bijv. Talentontwikkeling...';
+    inp.dataset.fonds = fonds; inp.id = 'regeling_' + fonds.replace(/\s/g,'_');
+    inp.style.cssText = 'flex:1;padding:0.4rem 0.7rem;font-size:0.8rem;';
+    wrap.appendChild(lbl); wrap.appendChild(inp);
+    container.appendChild(wrap);
+  });
+}
+
+const REGIO_FONDSEN = {
+  'amsterdam': { fondsen: ['Amsterdam Fonds voor de Kunsten (AFK)','W139','Stichting Elise Mathilde Fonds'], gemeentelijk: 'Gemeente Amsterdam — Kunst & Cultuur subsidies' },
+  'den haag':  { fondsen: ['Stroom Den Haag','Gemeente Den Haag Cultuursubsidie'], gemeentelijk: 'Gemeente Den Haag — cultuursubsidies' },
+  'rotterdam': { fondsen: ['CBK Rotterdam','Cultuurfonds Regio Rotterdam'], gemeentelijk: 'Gemeente Rotterdam — Cultuursubsidies' },
+  'utrecht':   { fondsen: ['K.F. Hein Fonds','Cultuurfonds Regio Utrecht'], gemeentelijk: 'Gemeente Utrecht — Cultuursubsidies' },
+  'eindhoven': { fondsen: ['Cultuurfonds Regio Noord-Brabant','Jan Naaijkens Fonds'], gemeentelijk: 'Gemeente Eindhoven — Cultuur en Erfgoed' },
+  'groningen': { fondsen: ['Cultuurfonds Regio Groningen','Noorderpoort Fonds'], gemeentelijk: 'Gemeente Groningen — Cultuursubsidies' },
+  'arnhem':    { fondsen: ['Cultuurfonds Regio Gelderland'], gemeentelijk: 'Gemeente Arnhem — Cultuursubsidie' },
+  'tilburg':   { fondsen: ['Cultuurfonds Regio Noord-Brabant'], gemeentelijk: 'Gemeente Tilburg — Cultuursubsidies' },
+};
+
+function updateRegioInfo(val) {
+  const key = Object.keys(REGIO_FONDSEN).find(k => val.toLowerCase().includes(k));
+  const box = document.getElementById('regioInfo');
+  if (key) {
+    const r = REGIO_FONDSEN[key];
+    box.innerHTML = `<strong>📍 Regionale fondsen voor ${val}:</strong>${r.fondsen.join(', ')} — en: ${r.gemeentelijk}`;
+    box.classList.add('visible');
+  } else {
+    box.classList.remove('visible');
+  }
+}
+
+async function fetchWebsite() {
+  const url = document.getElementById('portfolioUrl').value.trim();
+  const claudeKey = getKey('claudeApiKey');
+  if (!url) return alert('Vul een URL in.');
+  if (!claudeKey) return alert('Vul eerst je Claude API key in bovenaan.');
+  const status = document.getElementById('urlStatus');
+  const preview = document.getElementById('urlPreview');
+  const btn = document.getElementById('fetchBtn');
+  status.className = 'status-msg loading'; status.textContent = '⏳ Website wordt gelezen...';
+  preview.classList.remove('visible'); btn.disabled = true;
+  try {
+    const text = await callClaude(claudeKey, [{ role:'user', content:`Haal de belangrijkste informatie op van deze website voor een subsidiescan van een Nederlandse kunstenaar. URL: ${url}\n\nZoek naar: naam, discipline, vertoningsgeschiedenis, festivals, instellingen, prijzen, samenwerkingen, lopende projecten. Wees feitelijk en specifiek.` }], 1000);
+    websiteContext = text;
+    if (text.length < 50 || text.toLowerCase().includes('niet kunt bereiken')) {
+      status.className = 'status-msg error'; status.textContent = '⚠️ Website kon niet worden gelezen.'; websiteContext = '';
+    } else {
+      status.className = 'status-msg success'; status.textContent = '✓ Website gelezen — wordt meegenomen in de scan.';
+      preview.textContent = text.substring(0,300)+'...'; preview.classList.add('visible');
+    }
+  } catch(e) {
+    status.className = 'status-msg error'; status.textContent = '⚠️ Fout bij ophalen: ' + e.message; websiteContext = '';
+  }
+  btn.disabled = false;
+}
+
+function handleFileUpload(input) {
+  const file = input.files[0]; if (!file) return;
+  const status = document.getElementById('fileStatus');
+  const preview = document.getElementById('filePreview');
+  if (file.size > 20*1024*1024) { status.className='status-msg error'; status.textContent='⚠️ Bestand te groot (max 20MB).'; return; }
+  status.className='status-msg loading'; status.textContent=`⏳ "${file.name}" wordt ingelezen...`;
+  preview.classList.remove('visible');
+  const claudeKey = getKey('claudeApiKey');
+  if (!claudeKey) { status.className='status-msg error'; status.textContent='⚠️ Vul eerst je Claude API key in.'; return; }
+  const isPDF = file.type==='application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  if (isPDF) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const bytes = new Uint8Array(e.target.result);
+        let binary = ''; for(let i=0;i<bytes.byteLength;i++) binary+=String.fromCharCode(bytes[i]);
+        const base64 = btoa(binary);
+        const text = await callClaude(claudeKey, [{role:'user',content:[
+          {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+          {type:'text',text:'Lees dit document volledig en geef een uitgebreide samenvatting van alle informatie relevant voor een Nederlandse subsidieaanvraag. Beschrijf: discipline, project, vertoningsgeschiedenis, partners, lopende subsidies, budget, LOI\'s. Wees specifiek.'}
+        ]}], 1000);
+        documentContext = text;
+        if (!text.trim()) throw new Error('Geen tekst gevonden');
+        status.className='status-msg success'; status.textContent=`✓ "${file.name}" ingelezen.`;
+        preview.textContent=text.substring(0,400)+'...'; preview.classList.add('visible');
+      } catch(err) {
+        status.className='status-msg error'; status.textContent=`⚠️ PDF fout: ${err.message}`;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      documentContext = e.target.result.substring(0,8000);
+      status.className='status-msg success'; status.textContent=`✓ "${file.name}" ingelezen.`;
+      preview.textContent=documentContext.substring(0,300)+'...'; preview.classList.add('visible');
+    };
+    reader.readAsText(file,'UTF-8');
+  }
+}
+
+function togglePaste() { document.getElementById('pasteArea').classList.toggle('visible'); }
+function savePastedText() {
+  const text = document.getElementById('pasteText').value.trim(); if (!text) return;
+  documentContext = text.substring(0,8000);
+  document.getElementById('fileStatus').className='status-msg success'; document.getElementById('fileStatus').textContent='✓ Tekst opgeslagen als context.';
+  const preview=document.getElementById('filePreview'); preview.textContent=documentContext.substring(0,300)+(documentContext.length>300?'...':''); preview.classList.add('visible');
+  document.getElementById('pasteArea').classList.remove('visible');
+}
+
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); if(e.dataTransfer.files[0]) handleFileUpload({files:e.dataTransfer.files}); });
+
+function collectProjectData() {
+  const typeProject = [...getSelected('typeArtistiekTags'), ...getSelected('typeParticipatTags'), ...getSelected('typeOnderzoekTags')];
+  const ontvangenFondsen = getSelected('ontvangenTags');
+  const regelingPerFonds = [];
+  document.querySelectorAll('#regelingInputs input').forEach(inp => {
+    const fonds = inp.dataset.fonds;
+    const reg = inp.value.trim();
+    regelingPerFonds.push(fonds + (reg ? ` — ${reg}` : ''));
+  });
+  const ontvangenAndere = document.getElementById('ontvangenAndere').value.trim();
+  const alleOntvangen = [...regelingPerFonds, ...(ontvangenAndere ? ontvangenAndere.split(',').map(s=>s.trim()) : [])].filter(Boolean);
+  return {
+    naam: document.getElementById('naam').value.trim(),
+    regio: document.getElementById('regio').value.trim(),
+    achtergrond: document.getElementById('achtergrond').value.trim(),
+    projectOmschrijving: document.getElementById('projectOmschrijving').value.trim(),
+    extraContext: document.getElementById('extraContext').value.trim(),
+    rechtsvorm: getSelected('rechtsVormTags'),
+    disciplines: getSelected('disciplineTags'),
+    fase: getSelected('faseTags'),
+    faseProj: getSelected('faseProjTags'),
+    doel: getSelected('doelTags'),
+    typeProject,
+    locatie: getSelected('locatieTags'),
+    sociaal: getSelected('sociaalTags'),
+    bedrag: getSelected('bedragTags'),
+    ontvangenFondsen,
+    alleOntvangen,
+    websiteContext,
+    documentContext
+  };
+}
+
+// ════════════════════════════════════════════════════════════════
+//  ACTIONS — EDIT / RESET / COPY
+// ════════════════════════════════════════════════════════════════
+function editProject() {
+  showSection('sectionProject');
+  updatePipeline('project');
+}
+
+function resetAll() {
+  appState.fondsData = null; appState.projectData = null; appState.matchResult = null;
+  websiteContext = ''; documentContext = '';
+  document.querySelectorAll('#sectionProject input[type="text"], #sectionProject input[type="url"], #sectionProject textarea').forEach(el => {
+    if (!['claudeApiKey','apifyToken','serpApiKey'].includes(el.id)) el.value = '';
+  });
+  document.querySelectorAll('#sectionProject .tag.selected').forEach(t => t.classList.remove('selected'));
+  document.getElementById('regelingInputs').innerHTML = '';
+  ['urlStatus','urlPreview','fileStatus','filePreview'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el){ el.className = el.className.includes('preview') ? 'context-preview' : 'status-msg'; }
+  });
+  document.getElementById('logBox').innerHTML = '';
+  [1,2,3,4,5,6].forEach(n => {
+    setStep(n, '', '');
+    const d = document.getElementById(`step${n}detail`);
+    if(d) d.textContent = n === 2 ? 'Pollen elke 5 seconden...' : '';
+  });
+  document.getElementById('validationErrors').style.display = 'none';
+  showSection('sectionProject');
+  updatePipeline('project');
+}
+
+function copyResultJson() {
+  if (!appState.matchResult) return;
+  const fullData = { fonds: appState.fondsData, matches: appState.matchResult };
+  navigator.clipboard.writeText(JSON.stringify(fullData, null, 2)).then(() => {
+    const b = event.target; b.textContent = '✓ Gekopieerd!';
+    setTimeout(() => b.textContent = '📋 JSON kopieren', 2000);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  INIT — auto-load API keys from .env via server
+// ════════════════════════════════════════════════════════════════
+updatePipeline('project');
+
+(async function loadKeysFromEnv() {
+  try {
+    const resp = await fetch('/api/keys');
+    if (!resp.ok) return;
+    const keys = await resp.json();
+    if (keys.claudeApiKey) document.getElementById('claudeApiKey').value = keys.claudeApiKey;
+    if (keys.apifyToken)   document.getElementById('apifyToken').value   = keys.apifyToken;
+    if (keys.serpApiKey)    document.getElementById('serpApiKey').value    = keys.serpApiKey;
+    // Auto-close the keys card since they're loaded
+    const keysCard = document.getElementById('keysCard');
+    if (keys.claudeApiKey && keys.apifyToken && keys.serpApiKey) {
+      keysCard.removeAttribute('open');
+    }
+    console.log('API keys geladen uit .env');
+  } catch {
+    console.log('Geen /api/keys endpoint — vul keys handmatig in');
+  }
+})();
+</script>
+</body>
+</html>
