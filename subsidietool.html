@@ -1619,24 +1619,106 @@ function copyResultJson() {
 // ════════════════════════════════════════════════════════════════
 updatePipeline('project');
 
-(async function loadKeysFromEnv() {
+/**
+ * Key loading priority:
+ * 1. .env via /api/keys (localhost dev server)
+ * 2. localStorage (GitHub Pages — saved from previous session)
+ * 3. One-time setup dialog (first visit on GitHub Pages)
+ */
+(async function loadKeys() {
+  // Try 1: .env via local server
   try {
     const resp = await fetch('/api/keys');
-    if (!resp.ok) return;
-    const keys = await resp.json();
-    if (keys.claudeApiKey) document.getElementById('claudeApiKey').value = keys.claudeApiKey;
-    if (keys.apifyToken)   document.getElementById('apifyToken').value   = keys.apifyToken;
-    if (keys.serpApiKey)    document.getElementById('serpApiKey').value    = keys.serpApiKey;
-    // Auto-close the keys card since they're loaded
-    const keysCard = document.getElementById('keysCard');
-    if (keys.claudeApiKey && keys.apifyToken && keys.serpApiKey) {
-      keysCard.removeAttribute('open');
+    if (resp.ok) {
+      const keys = await resp.json();
+      if (keys.claudeApiKey && keys.apifyToken && keys.serpApiKey) {
+        document.getElementById('claudeApiKey').value = keys.claudeApiKey;
+        document.getElementById('apifyToken').value   = keys.apifyToken;
+        document.getElementById('serpApiKey').value    = keys.serpApiKey;
+        console.log('API keys geladen uit .env');
+        return;
+      }
     }
-    console.log('API keys geladen uit .env');
-  } catch {
-    console.log('Geen /api/keys endpoint — vul keys handmatig in');
+  } catch { /* not on localhost — continue */ }
+
+  // Try 2: localStorage
+  const saved = localStorage.getItem('subsidietool_keys');
+  if (saved) {
+    try {
+      const keys = JSON.parse(saved);
+      if (keys.claudeApiKey && keys.apifyToken && keys.serpApiKey) {
+        document.getElementById('claudeApiKey').value = keys.claudeApiKey;
+        document.getElementById('apifyToken').value   = keys.apifyToken;
+        document.getElementById('serpApiKey').value    = keys.serpApiKey;
+        console.log('API keys geladen uit localStorage');
+        return;
+      }
+    } catch { /* corrupt data — continue */ }
   }
+
+  // Try 3: Show setup dialog
+  showKeySetupDialog();
 })();
+
+function showKeySetupDialog() {
+  const overlay = document.createElement('div');
+  overlay.id = 'keySetupOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(26,24,48,0.6);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:center;justify-content:center;padding:1.5rem;';
+
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:2rem 2.25rem;max-width:460px;width:100%;box-shadow:0 12px 40px rgba(74,63,165,0.2);">
+      <div style="font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--primary);margin-bottom:0.35rem;">🔑 API Keys instellen</div>
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.5;">
+        Eenmalige setup — je keys worden veilig opgeslagen in je browser en worden niet gedeeld.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:0.85rem;">
+        <div>
+          <label style="font-size:0.73rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Claude API Key</label>
+          <input type="password" id="setupClaudeKey" placeholder="sk-ant-api03-..." style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;font-family:monospace;font-size:0.78rem;margin-top:0.25rem;">
+        </div>
+        <div>
+          <label style="font-size:0.73rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Apify API Token</label>
+          <input type="password" id="setupApifyToken" placeholder="apify_api_..." style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;font-family:monospace;font-size:0.78rem;margin-top:0.25rem;">
+        </div>
+        <div>
+          <label style="font-size:0.73rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">SerpAPI Key</label>
+          <input type="password" id="setupSerpKey" placeholder="serpapi_key_..." style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;font-family:monospace;font-size:0.78rem;margin-top:0.25rem;">
+        </div>
+      </div>
+      <button onclick="saveKeySetup()" style="width:100%;padding:0.85rem;margin-top:1.25rem;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;border:none;border-radius:12px;font-family:'DM Serif Display',serif;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 14px rgba(74,63,165,0.25);">✓ Opslaan & doorgaan</button>
+      <p style="font-size:0.68rem;color:var(--muted);text-align:center;margin-top:0.75rem;line-height:1.4;">
+        Keys worden opgeslagen in localStorage van je browser.<br>Ze verlaten nooit je apparaat.
+      </p>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function saveKeySetup() {
+  const claudeKey = document.getElementById('setupClaudeKey').value.trim();
+  const apifyToken = document.getElementById('setupApifyToken').value.trim();
+  const serpKey = document.getElementById('setupSerpKey').value.trim();
+
+  if (!claudeKey || !apifyToken || !serpKey) {
+    alert('Vul alle drie de keys in.');
+    return;
+  }
+
+  // Save to localStorage
+  localStorage.setItem('subsidietool_keys', JSON.stringify({
+    claudeApiKey: claudeKey,
+    apifyToken: apifyToken,
+    serpApiKey: serpKey
+  }));
+
+  // Set in hidden inputs
+  document.getElementById('claudeApiKey').value = claudeKey;
+  document.getElementById('apifyToken').value   = apifyToken;
+  document.getElementById('serpApiKey').value    = serpKey;
+
+  // Remove dialog
+  document.getElementById('keySetupOverlay').remove();
+  console.log('API keys opgeslagen in localStorage');
+}
 </script>
 </body>
 </html>
