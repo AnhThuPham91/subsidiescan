@@ -255,6 +255,13 @@ textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
 .score-excluded { background: #3a1010; color: #fff; font-weight: 800; letter-spacing: 0.05em; }
 .score-unk  { background: #ebebf5; color: var(--muted); }
 
+/* Score bar */
+.score-bar-wrap { margin-top: 0.25rem; }
+.score-bar { height: 8px; background: #e8e6f0; border-radius: 6px; overflow: hidden; }
+.score-fill { height: 100%; background: linear-gradient(90deg, #4a3fa5, #7b72d4); border-radius: 6px; transition: width 0.6s ease; }
+.score-fill.mid { background: linear-gradient(90deg, #c88a00, #e8b855); }
+.score-fill.low { background: linear-gradient(90deg, #c04040, #e87070); }
+
 /* Exclusion banner on regeling */
 .exclusion-banner { background: var(--danger); border: 1.5px solid var(--danger-border); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.85rem; display: flex; align-items: flex-start; gap: 0.6rem; }
 .exclusion-banner .excl-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
@@ -335,9 +342,9 @@ textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
 <div class="pipeline-bar" id="pipelineBar">
   <div class="pipe-step active" id="pipeProject"><div class="pipe-dot"></div> Project invoeren</div>
   <span class="pipe-arrow">→</span>
-  <div class="pipe-step" id="pipeCrawl"><div class="pipe-dot"></div> Fonds discovery + crawl</div>
+  <div class="pipe-step" id="pipeScan"><div class="pipe-dot"></div> Subsidiescan</div>
   <span class="pipe-arrow">→</span>
-  <div class="pipe-step" id="pipeMatch"><div class="pipe-dot"></div> Match output</div>
+  <div class="pipe-step" id="pipeResults"><div class="pipe-dot"></div> Resultaten</div>
 </div>
 
 <div class="main">
@@ -354,13 +361,13 @@ textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
 
   <div class="intro-card">
     <h2>Subsidiescan</h2>
-    <p>Vul het klantprofiel en een fonds-URL in. De tool crawlt het fonds automatisch, analyseert regelingen en matcht ze tegen het project met een score van 0–100 per regeling.</p>
+    <p>Vul je klantprofiel in en start de scan. De tool doorzoekt automatisch 25+ fondsen, filtert op rechtsvorm en discipline, en geeft de 8 best passende fondsen met een score van 0–100.</p>
     <div class="feature-pills">
       <span class="pill">🏛️ Rechtsvorm-filter</span>
-      <span class="pill">🔍 SerpAPI discovery</span>
-      <span class="pill">🕷 Apify crawl</span>
-      <span class="pill">🤖 Claude match engine</span>
+      <span class="pill">🔍 25+ fondsen database</span>
+      <span class="pill">🤖 Claude diepte-analyse</span>
       <span class="pill">🚫 Uitsluitingscheck</span>
+      <span class="pill">✦ Top 8 resultaten</span>
     </div>
   </div>
 
@@ -581,36 +588,13 @@ textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
       </div>
     </div>
 
-    <!-- Fonds URL -->
-    <div class="form-card">
-      <div class="section-title"><span class="num">4</span> Fonds om te analyseren</div>
-      <div class="field">
-        <label>Website URL van het fonds</label>
-        <p class="field-note">Gebruik de hoofdpagina of de subsidies-pagina. Bijv. https://www.stimuleringsfonds.nl/subsidies</p>
-        <input type="url" id="startUrl" placeholder="https://www.fondsnaam.nl/subsidies">
-      </div>
-      <div class="field">
-        <label>Crawl instellingen <span class="sublabel">(optioneel aanpassen)</span></label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;margin-top:0.4rem;">
-          <div>
-            <label style="font-size:0.73rem;color:var(--muted);font-weight:500;">Max diepte</label>
-            <input type="text" id="crawlDepth" value="3" style="margin-top:0.2rem;">
-          </div>
-          <div>
-            <label style="font-size:0.73rem;color:var(--muted);font-weight:500;">Max pagina's</label>
-            <input type="text" id="crawlPages" value="30" style="margin-top:0.2rem;">
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Validation errors placeholder -->
     <div class="validation-errors" id="validationErrors" style="display:none;">
       <h4>Ontbrekende velden</h4>
       <ul id="validationList"></ul>
     </div>
 
-    <button class="cta-btn" onclick="runFullPipeline()">🚀 Start subsidiescan — crawl + match</button>
+    <button class="cta-btn" onclick="runFullPipeline()">🚀 Start subsidiescan</button>
   </div>
 
 </div><!-- /sectionProject -->
@@ -622,12 +606,10 @@ textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
   <div class="progress-card">
     <div class="progress-title">⟳ Bezig met analyseren...</div>
     <div class="step-list">
-      <div class="step" id="step1"><span class="step-icon">🔍</span><div class="step-text"><div>SerpAPI zoeken</div><div class="step-detail" id="step1detail"></div></div><div class="spinner-sm" id="spin1" style="display:none;"></div></div>
-      <div class="step" id="step2"><span class="step-icon">🕷</span><div class="step-text"><div>Apify crawl starten & wachten</div><div class="step-detail" id="step2detail">Pollen elke 5 seconden...</div></div><div class="spinner-sm" id="spin2" style="display:none;"></div></div>
-      <div class="step" id="step3"><span class="step-icon">📥</span><div class="step-text"><div>Dataset ophalen & filteren</div><div class="step-detail" id="step3detail"></div></div><div class="spinner-sm" id="spin3" style="display:none;"></div></div>
-      <div class="step" id="step4"><span class="step-icon">🤖</span><div class="step-text"><div>Claude — regelingen analyseren</div><div class="step-detail" id="step4detail"></div></div><div class="spinner-sm" id="spin4" style="display:none;"></div></div>
-      <div class="step" id="step5"><span class="step-icon">⚡</span><div class="step-text"><div>Match engine — scoring & uitsluitingen</div><div class="step-detail" id="step5detail"></div></div><div class="spinner-sm" id="spin5" style="display:none;"></div></div>
-      <div class="step" id="step6"><span class="step-icon">✦</span><div class="step-text"><div>Resultaten opslaan</div><div class="step-detail" id="step6detail"></div></div></div>
+      <div class="step" id="step1"><span class="step-icon">🏛</span><div class="step-text"><div>Klantprofiel & rechtsvorm analyseren</div><div class="step-detail" id="step1detail"></div></div><div class="spinner-sm" id="spin1" style="display:none;"></div></div>
+      <div class="step" id="step2"><span class="step-icon">🔍</span><div class="step-text"><div>Fondsen matchen op discipline en rechtsvorm</div><div class="step-detail" id="step2detail"></div></div><div class="spinner-sm" id="spin2" style="display:none;"></div></div>
+      <div class="step" id="step3"><span class="step-icon">🤖</span><div class="step-text"><div>Claude — diepte-analyse top fondsen</div><div class="step-detail" id="step3detail"></div></div><div class="spinner-sm" id="spin3" style="display:none;"></div></div>
+      <div class="step" id="step4"><span class="step-icon">✦</span><div class="step-text"><div>Resultaten samenstellen</div><div class="step-detail" id="step4detail"></div></div></div>
     </div>
     <div class="log-box" id="logBox"></div>
   </div>
@@ -640,25 +622,17 @@ textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
 
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap;">
     <div>
-      <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--primary);">Matchresultaten</h2>
+      <h2 style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--primary);">Subsidiescan Resultaat</h2>
       <p style="font-size:0.78rem;color:var(--muted);margin-top:0.15rem;" id="resultMeta"></p>
     </div>
     <div class="btn-row">
-      <button class="btn-secondary" onclick="copyResultJson()">📋 JSON kopieren</button>
+      <button class="btn-secondary" onclick="copyScanResult()">📋 Kopieren</button>
+      <button class="btn-secondary" onclick="window.print()">🖨️ Afdrukken</button>
     </div>
   </div>
 
-  <!-- Fonds banner -->
-  <div id="fondsBanner"></div>
-
-  <!-- Fonds score banner -->
-  <div id="fondsScoreBanner"></div>
-
-  <!-- Match result cards -->
-  <div id="matchCards"></div>
-
-  <span class="raw-toggle" onclick="toggleRaw('resultRawJson','resultRawToggle')" id="resultRawToggle">▸ Bekijk ruwe JSON</span>
-  <div class="raw-json" id="resultRawJson"></div>
+  <!-- Scan result fondsen cards -->
+  <div id="scanResultCards"></div>
 
   <div style="margin-top:1.25rem;display:flex;gap:0.65rem;flex-wrap:wrap;">
     <button class="reset-btn" onclick="editProject()">✏️ Project aanpassen</button>
@@ -762,8 +736,8 @@ function showSection(sectionId) {
 }
 
 function updatePipeline(activeStep) {
-  const steps = ['pipeProject','pipeCrawl','pipeMatch'];
-  const order = { project: 0, crawl: 1, match: 2 };
+  const steps = ['pipeProject','pipeScan','pipeResults'];
+  const order = { project: 0, scan: 1, results: 2 };
   const activeIdx = order[activeStep] ?? 0;
   steps.forEach((id, i) => {
     const el = document.getElementById(id);
@@ -783,7 +757,7 @@ function log(msg, type = '') {
   box.scrollTop = box.scrollHeight;
 }
 
-const STEP_ICONS = { 1:'🔍', 2:'🕷', 3:'📥', 4:'🤖', 5:'⚡', 6:'✦' };
+const STEP_ICONS = { 1:'🏛', 2:'🔍', 3:'🤖', 4:'✦' };
 function setStep(n, state, detail = '') {
   const step = document.getElementById(`step${n}`);
   const spin = document.getElementById(`spin${n}`);
@@ -834,383 +808,87 @@ function showValidationErrors(errors) {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  CRAWL LOGIC (requirement 4 — new SerpAPI queries)
+//  FONDSEN DATABASE — static list of Dutch art/culture funds
 // ════════════════════════════════════════════════════════════════
-const URL_KEYWORDS = ['aanvragen','richtlijn','regeling','subsidie','voorwaarden','criteria','download','documenten','pdf','aanvraag','open','fonds','programma','indienen','doelgroep'];
+const FONDSEN_DB = [
+  { naam:"Stimuleringsfonds Creatieve Industrie", focus:"design, architectuur, digitale cultuur, vormgeving", url:"https://www.stimuleringsfonds.nl/subsidies", disciplines:["design","architectuur","digitale cultuur"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","kunstenaarscollectief (informeel)"] },
+  { naam:"Mondriaanfonds", focus:"beeldende kunst, fotografie, internationale presentatie", url:"https://www.mondriaanfonds.nl", disciplines:["beeldende kunst","fotografie"], rechtsvormen:["individuele kunstenaar (zzp)","stichting"] },
+  { naam:"Nederlands Filmfonds", focus:"film, documentaire, animatie, korte film", url:"https://www.filmfonds.nl", disciplines:["film"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","bv/nv (commercieel)"] },
+  { naam:"Cultuurfonds", focus:"project over meerdere disciplines", url:"https://www.cultuurfonds.nl", disciplines:["beeldende kunst","muziek","theater","dans","literatuur","fotografie","erfgoed","interdisciplinair","mode/textiel"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","vereniging","kunstenaarscollectief (informeel)"] },
+  { naam:"Fonds voor Cultuurparticipatie", focus:"participatie, educatie, amateurkunst", url:"https://cultuurparticipatie.nl", disciplines:["educatie","podiumkunsten","muziek","dans","theater","beeldende kunst"], rechtsvormen:["stichting","vereniging"] },
+  { naam:"Fonds ZOZ", focus:"polarisatie en radicalisering verminderen in NL", url:"https://fondszoz.nl", disciplines:["interdisciplinair","theater","muziek","beeldende kunst","film"], sociaal:"polarisatie/radicalisering", rechtsvormen:["individuele kunstenaar (zzp)","stichting","vereniging"] },
+  { naam:"DNB Fonds", focus:"trans-Atlantisch slavernij erfgoed, Caribisch NL", url:"https://www.cultuurfonds.nl/fondsen/dnb-fonds", disciplines:["beeldende kunst","theater","dans","literatuur","interdisciplinair","film"], sociaal:"trans-Atlantisch slavernij/erfgoed", rechtsvormen:["individuele kunstenaar (zzp)","stichting","vereniging"] },
+  { naam:"VSBFonds", focus:"educatie, participatie, cultuur", url:"https://www.vsbfonds.nl", disciplines:["beeldende kunst","muziek","theater","dans","podiumkunsten"], rechtsvormen:["stichting","vereniging","individuele kunstenaar (zzp)"] },
+  { naam:"Amsterdam Fonds voor de Kunsten", focus:"Amsterdam-gebaseerde kunstenaars", url:"https://www.amsterdamsfondsvoordekunsten.nl", disciplines:["beeldende kunst","muziek","theater","dans","film","literatuur","interdisciplinair","fotografie"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","kunstenaarscollectief (informeel)"], regio:"amsterdam" },
+  { naam:"Prins Clausfonds", focus:"kunstenaars met niet-Europese culturele achtergrond", url:"https://princeclausfund.nl", disciplines:["interdisciplinair","beeldende kunst","dans","muziek","theater","film"], rechtsvormen:["individuele kunstenaar (zzp)","stichting"] },
+  { naam:"Dioraphte", focus:"podiumkunsten, erfgoed, sociale initiatieven Afrika/NL", url:"https://dioraphte.nl", disciplines:["theater","dans","muziek","erfgoed","beeldende kunst","podiumkunsten"], rechtsvormen:["stichting","vereniging"] },
+  { naam:"Stichting DOEN", focus:"sociale en culturele vernieuwing, klimaat", url:"https://www.doen.nl", disciplines:["interdisciplinair","theater","beeldende kunst","muziek","dans"], sociaal:"sociaal-maatschappelijk", rechtsvormen:["stichting","vereniging"] },
+  { naam:"Stichting Stokroos", focus:"beeldend kunstenaars/vormgevers 3-8 jaar actief", url:"https://stokroos.nl/home", disciplines:["beeldende kunst","design","mode/textiel"], rechtsvormen:["individuele kunstenaar (zzp)"] },
+  { naam:"K.F. Hein Fonds", focus:"kunstenaars en ontwerpers, Utrecht regio", url:"https://kfhein.nl", disciplines:["beeldende kunst","muziek","theater","dans","design"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","vereniging"], regio:"utrecht" },
+  { naam:"Amarte Fonds", focus:"muziek, film, theater, beeldende kunst, literatuur", url:"https://www.amarte.nl/nl", disciplines:["muziek","film","theater","beeldende kunst","literatuur","interdisciplinair"], rechtsvormen:["individuele kunstenaar (zzp)","stichting"] },
+  { naam:"Stichting Niemeijer Fonds", focus:"begin van carrière of nieuwe ontwikkeling", url:"https://www.stichtingniemeijerfonds.nl", disciplines:["beeldende kunst","fotografie","interdisciplinair","muziek","theater"], rechtsvormen:["individuele kunstenaar (zzp)"] },
+  { naam:"Gieskes-Strijbis Fonds", focus:"natuur/milieu, kunst en cultuur, democratie", url:"https://www.gieskesstrijbisfonds.nl", disciplines:["beeldende kunst","theater","interdisciplinair","erfgoed"], rechtsvormen:["stichting","vereniging"] },
+  { naam:"NPO Fonds", focus:"video, audio, talentontwikkeling", url:"https://npo.nl/npofonds", disciplines:["film","digitale cultuur","muziek"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","bv/nv (commercieel)"] },
+  { naam:"Ammodo Art", focus:"internationaal toonaangevende beeldende kunst en podiumkunst", url:"https://www.ammodo-art.org", disciplines:["beeldende kunst","dans","theater","muziek","podiumkunsten"], rechtsvormen:["stichting","vereniging"] },
+  { naam:"Stroom Den Haag", focus:"beeldende kunst Den Haag", url:"https://stroom.nl", disciplines:["beeldende kunst","fotografie","digitale cultuur"], rechtsvormen:["individuele kunstenaar (zzp)","stichting"], regio:"den haag" },
+  { naam:"CBK Rotterdam", focus:"beeldende kunst Rotterdam", url:"https://cbk.nl", disciplines:["beeldende kunst","fotografie","interdisciplinair"], rechtsvormen:["individuele kunstenaar (zzp)","stichting"], regio:"rotterdam" },
+  { naam:"Filmcommission NL", focus:"feature film, animatie, documentaire", url:"https://filmcommission.nl/fund-financing/", disciplines:["film"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","bv/nv (commercieel)"] },
+  { naam:"Cultuurfonds — Prins Bernhard", focus:"diverse disciplines, regionaal fonds", url:"https://www.cultuurfonds.nl/prins-bernhard-cultuurfonds", disciplines:["beeldende kunst","muziek","theater","dans","literatuur","erfgoed","film"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","vereniging","kunstenaarscollectief (informeel)"] },
+  { naam:"Fondskwadraat", focus:"rentevrije leningen onder €8.000", url:"https://www.fondskwadraat.nl", disciplines:["beeldende kunst","muziek","theater","dans","interdisciplinair","design"], rechtsvormen:["individuele kunstenaar (zzp)","kunstenaarscollectief (informeel)"] },
+  { naam:"Fonds Podiumkunsten", focus:"theater, dans, muziek, muziektheater", url:"https://fondspodiumkunsten.nl", disciplines:["theater","dans","muziek","podiumkunsten"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","bv/nv (commercieel)"] },
+  { naam:"Nederlands Letterenfonds", focus:"literatuur, vertaling, graphic novels", url:"https://www.letterenfonds.nl", disciplines:["literatuur"], rechtsvormen:["individuele kunstenaar (zzp)","stichting"] },
+];
 
-function isRelevantPage(item) {
-  const url = (item.url || '').toLowerCase();
-  return URL_KEYWORDS.some(kw => url.includes(kw));
-}
+// ════════════════════════════════════════════════════════════════
+//  PRE-SCORING — match fondsen against project profile
+// ════════════════════════════════════════════════════════════════
+function preScoreFondsen(project) {
+  const discSet   = new Set(project.disciplines.map(d => d.toLowerCase()));
+  const rvSet     = new Set(project.rechtsvorm.map(r => r.toLowerCase()));
+  const regioLow  = (project.regio || '').toLowerCase();
+  const sociaal   = (project.sociaal || []).join(' ').toLowerCase();
+  const prevNames = new Set((project.alleOntvangen || []).map(p => p.toLowerCase()));
 
-function isPdf(item) {
-  const url = (item.url || '').toLowerCase();
-  const ct = (item.contentType || '').toLowerCase();
-  return url.includes('.pdf') || ct.includes('pdf');
-}
+  return FONDSEN_DB.map(f => {
+    // Skip funds already received
+    if (prevNames.size > 0 && Array.from(prevNames).some(p =>
+      f.naam.toLowerCase().includes(p) || p.includes(f.naam.toLowerCase().split(' ')[0])
+    )) return { ...f, _score: -99 };
 
-async function searchWithSerpApi(domain, serpApiKey) {
-  // Requirement 4: expanded SerpAPI queries
-  const queries = [
-    `site:${domain} regeling`,
-    `site:${domain} subsidie`,
-    `site:${domain} deadline`,
-    `site:${domain} hoogte aanvraagbedrag`,
-    `site:${domain} opent sluit`,
-    `site:${domain} richtlijnen`,
-    `site:${domain} wie kan indienen`,
-    `site:${domain} aanvraagvoorwaarden`,
-    `site:${domain} uitsluitingscriteria`,
-    `site:${domain} individuele makers`,
-    `site:${domain} instellingen`
-  ];
-  const urls = new Set();
-  for (const q of queries) {
-    try {
-      const resp = await fetch(
-        `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(q)}&api_key=${serpApiKey}&num=10`
-      );
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      (data.organic_results || []).forEach(r => {
-        if (r.link && r.link.includes(domain)) urls.add(r.link);
-      });
-      log(`SerpAPI: "${q}" — ${(data.organic_results || []).filter(r => r.link?.includes(domain)).length} hits`);
-    } catch(e) { /* continue */ }
-  }
-  return Array.from(urls).slice(0, 20);
-}
+    let score = 0;
 
-// Requirement 5: updated JSON schema for regelingen
-function buildCrawlPrompt(bundle, sourceUrl) {
-  return `Je bent een subsidie-analist gespecialiseerd in Nederlandse kunst- en cultuurfondsen.
-Gebruik uitsluitend de aangeleverde webpagina- en PDF-teksten.
-Verzin geen informatie.
-Als iets niet expliciet in de bronnen staat, schrijf: "ONZEKER – handmatig controleren".
-
-Doel:
-Maak een eerste, redelijk accurate filtering van regelingen van dit fonds: ${sourceUrl}
-Focus sterk op:
-- openstelling / deadline
-- min en max bedrag
-- discipline / doelgroep
-- projectfase
-- harde criteria
-- uitsluitingscriteria (heel belangrijk)
-- WIE mag aanvragen (rechtsvorm: individueel, stichting, collectief, etc.)
-- WIE is UITGESLOTEN van aanvragen
-
-Extractieregels:
-- Zoek expliciet naar woorden: "opent", "open", "sluit", "gesloten", "deadline", "indienen", "aanvraagperiode".
-- Zoek expliciet naar bedragen met € en woorden: "budget", "subsidiebedrag", "maximaal", "minimum".
-- Als je een bedrag ziet dat een totaalbudget lijkt (bijv. "€ 650.000 budget subsidietijdvak"), zet dit NIET als max_bedrag tenzij de bron zegt dat dit het max per aanvraag is.
-- Als openstelling/deadline alleen als "opent 25 februari 15:00" staat, zet dat exact zo in deadline/openstelling.
-- Zoek expliciet naar wie mag indienen: "individuele kunstenaars", "stichtingen", "instellingen", "collectieven".
-- Zoek expliciet naar wie NIET mag indienen: "niet voor individuen", "alleen voor instellingen", "uitgesloten".
-
-Geef uitsluitend JSON output — geen uitleg, geen markdown buiten de JSON, geen commentaar.
-Begin direct met { en eindig met }.
-
-JSON schema:
-{
-  "fonds_naam": "string",
-  "fonds_url": "string",
-  "fonds_omschrijving": "string (max 2 zinnen)",
-  "regelingen": [
-    {
-      "naam": "string",
-      "openstelling": "string",
-      "deadline": "string",
-      "min_bedrag": "string",
-      "max_bedrag": "string",
-      "discipline": "string",
-      "doelgroep": "string",
-      "projectfase": "string",
-      "toegestane_aanvragers": ["string (bijv. individuele kunstenaars, stichtingen, collectieven)"],
-      "uitgesloten_aanvragers": ["string (bijv. commerciele bedrijven, individuen zonder kvk)"],
-      "harde_criteria": ["string"],
-      "uitsluitingscriteria": ["string"],
-      "evidence": [
-        { "url": "string", "quote": "string (max 25 woorden)" }
-      ]
+    // Discipline match (primary signal)
+    score += f.disciplines.filter(d => discSet.has(d)).length * 4;
+    // Broad disciplines get a base
+    if (f.disciplines.some(d => ['interdisciplinair','breed'].includes(d))) score += 1;
+    // Regio bonus
+    if (f.regio && regioLow.includes(f.regio)) score += 6;
+    // Sociaal match
+    if (f.sociaal && sociaal.includes(f.sociaal.split('/')[0])) score += 8;
+    // Rechtsvorm compatibility (priority 1 — uitsluitingscriterium)
+    if (rvSet.size > 0) {
+      const rvMatch = f.rechtsvormen?.some(r => rvSet.has(r.toLowerCase()));
+      score += rvMatch ? 3 : -20; // hard penalty for rechtsvorm mismatch
     }
-  ]
-}
+    // Cultural background → Prins Clausfonds bonus
+    if (project.achtergrond && f.naam.toLowerCase().includes('prins claus')) score += 6;
 
-BRONNEN:
-${bundle}`;
-}
-
-async function executeCrawl(startUrl, claudeKey, apifyToken, serpApiKey) {
-  // Step 1 — SerpAPI
-  setStep(1, 'active', 'Zoeken via SerpAPI...');
-  log('SerpAPI zoekopdrachten uitvoeren (11 queries)...');
-  const domain = new URL(startUrl).hostname;
-  const serpUrls = await searchWithSerpApi(domain, serpApiKey);
-  log(`${serpUrls.length} unieke URLs gevonden via SerpAPI`, 'ok');
-  setStep(1, 'done', `${serpUrls.length} URLs gevonden`);
-
-  // Step 2 — Apify start + poll
-  setStep(2, 'active', 'Apify actor starten...');
-  log(`Apify crawl starten voor: ${startUrl}`);
-
-  const runResp = await fetch(
-    `https://api.apify.com/v2/acts/thu1710~my-actor/runs?token=${apifyToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ startUrls: serpUrls.map(u => ({ url: u })) })
-    }
-  );
-  if (!runResp.ok) throw new Error(`Apify start mislukt (${runResp.status}): ${await runResp.text()}`);
-  const runData = await runResp.json();
-  const runId = runData.data?.id;
-  const datasetId = runData.data?.defaultDatasetId;
-  if (!runId) throw new Error('Geen run ID ontvangen van Apify');
-  log(`Run gestart — ID: ${runId}`, 'ok');
-
-  let status = 'RUNNING';
-  let pollCount = 0;
-  while (['RUNNING','READY','ABORTING'].includes(status)) {
-    await sleep(5000);
-    pollCount++;
-    const pollData = await (await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apifyToken}`)).json();
-    status = pollData.data?.status;
-    const pages = pollData.data?.stats?.httpRequestsFinished ?? '?';
-    setStep(2, 'active', `Status: ${status} — ${pages} pagina's (poll ${pollCount})`);
-    log(`Poll ${pollCount}: ${status} — ${pages} pagina's`);
-    if (pollCount >= 72) throw new Error('Timeout: crawl duurde langer dan 6 minuten');
-  }
-  if (status !== 'SUCCEEDED') throw new Error(`Crawl beeindigd met status: ${status}`);
-  setStep(2, 'done', `Succesvol — ${pollCount * 5}s`);
-
-  // Step 3 — Dataset
-  setStep(3, 'active', 'Dataset ophalen...');
-  const itemsData = await (await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyToken}&format=json&limit=200&clean=true`)).json();
-  if (!Array.isArray(itemsData)) throw new Error('Onverwacht dataset formaat');
-  log(`${itemsData.length} items ontvangen`);
-  const relevantPages = itemsData.filter(i => !isPdf(i) && isRelevantPage(i)).slice(0, 12);
-  const pdfItems      = itemsData.filter(i => isPdf(i)).slice(0, 5);
-  const allFiltered   = [...relevantPages, ...pdfItems];
-  if (allFiltered.length === 0) allFiltered.push(...itemsData.slice(0, 8));
-  setStep(3, 'done', `${relevantPages.length} pagina's + ${pdfItems.length} PDF's`);
-  log(`Gefilterd: ${relevantPages.length} pagina's, ${pdfItems.length} PDF's`, 'ok');
-
-  // Step 4 — Claude analysis
-  setStep(4, 'active', 'Prompt opbouwen...');
-  const MAX_CHARS = 10000;
-  const bundle = allFiltered.map((item, i) => {
-    const raw = item.markdown || item.text || item.pageContent || item.html || '';
-    const plain = stripHtml(raw);
-    return `--- BRON ${i + 1}: ${item.url} ---\n${(plain || '').substring(0, MAX_CHARS)}`;
-  }).join('\n\n');
-  log(`Bundle: ~${Math.round(bundle.length / 1000)}k tekens`);
-  setStep(4, 'active', 'Claude aanroepen...');
-  const rawText = await callClaude(claudeKey, [{ role: 'user', content: buildCrawlPrompt(bundle, startUrl) }], 5000);
-  let parsed;
-  try { parsed = parseJsonResponse(rawText); } catch(e) { throw new Error('JSON parse mislukt: ' + e.message); }
-  log(`Analyse klaar — ${parsed.regelingen?.length || 0} regelingen gevonden`, 'ok');
-  setStep(4, 'done', `${parsed.regelingen?.length || 0} regelingen gevonden`);
-
-  return { fondsData: parsed, pageCount: allFiltered.length };
+    return { ...f, _score: score };
+  })
+  .filter(f => f._score > 0)
+  .sort((a, b) => b._score - a._score);
 }
 
 // ════════════════════════════════════════════════════════════════
-//  MATCH ENGINE (requirement 2, 3, 5, 6 — separated from crawl)
-// ════════════════════════════════════════════════════════════════
-
-/**
- * Check uitsluitingen (priority 1, requirement 3).
- * Returns { is_uitgesloten: boolean, reden: string }
- */
-function checkUitsluitingen(regeling, projectData) {
-  const projectRechtsvorm = (projectData.rechtsvorm || []).map(r => r.toLowerCase());
-  if (projectRechtsvorm.length === 0) return { is_uitgesloten: false, reden: '' };
-
-  // Check uitgesloten_aanvragers
-  const uitgesloten = (regeling.uitgesloten_aanvragers || []).map(a => a.toLowerCase());
-  for (const rv of projectRechtsvorm) {
-    for (const excl of uitgesloten) {
-      if (excl.includes(rv) || rv.includes(excl) ||
-          (rv.includes('zzp') && (excl.includes('individu') || excl.includes('natuurlijk persoon'))) ||
-          (rv.includes('stichting') && excl.includes('stichting')) ||
-          (rv.includes('bv') && (excl.includes('commerci') || excl.includes('bv'))) ||
-          (rv.includes('student') && (excl.includes('student') || excl.includes('zonder kvk')))) {
-        return { is_uitgesloten: true, reden: `Rechtsvorm "${rv}" staat op de uitsluitingslijst: "${excl}"` };
-      }
-    }
-  }
-
-  // Check toegestane_aanvragers — if specified and project doesn't match
-  const toegestaan = (regeling.toegestane_aanvragers || []).map(a => a.toLowerCase());
-  if (toegestaan.length > 0) {
-    const isMatched = projectRechtsvorm.some(rv =>
-      toegestaan.some(ta =>
-        ta.includes(rv) || rv.includes(ta) ||
-        (rv.includes('zzp') && (ta.includes('individu') || ta.includes('kunstenaar') || ta.includes('maker'))) ||
-        (rv.includes('stichting') && ta.includes('stichting')) ||
-        (rv.includes('stichting') && ta.includes('instelling')) ||
-        (rv.includes('vereniging') && (ta.includes('vereniging') || ta.includes('instelling'))) ||
-        (rv.includes('bv') && (ta.includes('bv') || ta.includes('commerci') || ta.includes('bedrijf') || ta.includes('instelling'))) ||
-        (rv.includes('collectief') && (ta.includes('collectief') || ta.includes('groep'))) ||
-        (rv.includes('student') && ta.includes('student'))
-      )
-    );
-    if (!isMatched) {
-      return { is_uitgesloten: true, reden: `Rechtsvorm "${projectRechtsvorm.join(', ')}" niet gevonden in toegestane aanvragers: "${toegestaan.join(', ')}"` };
-    }
-  }
-
-  return { is_uitgesloten: false, reden: '' };
-}
-
-/**
- * Match engine: runs Claude to score each regeling 0-100 (requirement 2, 6).
- * Uitsluitingen are checked BEFORE Claude call (requirement 3).
- */
-async function matchEngine(fondsData, projectData, claudeKey) {
-  const regelingen = fondsData.regelingen || [];
-  const results = [];
-
-  // Phase 1: Pre-check uitsluitingen (priority 1, requirement 3)
-  const preChecked = regelingen.map(r => {
-    const uitsluiting = checkUitsluitingen(r, projectData);
-    return { regeling: r, ...uitsluiting };
-  });
-
-  const excluded = preChecked.filter(p => p.is_uitgesloten);
-  const eligible = preChecked.filter(p => !p.is_uitgesloten);
-
-  log(`Uitsluitingscheck: ${excluded.length} uitgesloten, ${eligible.length} geschikt`, excluded.length > 0 ? 'warn' : 'ok');
-
-  // Add excluded with score 0
-  for (const ex of excluded) {
-    results.push({
-      regeling_naam: ex.regeling.naam,
-      match_score: 0,
-      is_project_uitgesloten: true,
-      uitsluitingsreden: ex.reden,
-      doelgroep: ex.regeling.doelgroep || '',
-      toegestane_aanvragers: ex.regeling.toegestane_aanvragers || [],
-      uitgesloten_aanvragers: ex.regeling.uitgesloten_aanvragers || [],
-      match_motivatie: `UITGESLOTEN: ${ex.reden}`,
-      kansen: [],
-      blokkades: [ex.reden],
-      aanbeveling: 'Deze regeling is niet geschikt vanwege uitsluitingscriteria.'
-    });
-  }
-
-  // Phase 2: Score eligible regelingen via Claude
-  if (eligible.length > 0) {
-    const regelingenJson = JSON.stringify(eligible.map(p => ({
-      naam: p.regeling.naam,
-      openstelling: p.regeling.openstelling,
-      deadline: p.regeling.deadline,
-      min_bedrag: p.regeling.min_bedrag,
-      max_bedrag: p.regeling.max_bedrag,
-      discipline: p.regeling.discipline,
-      doelgroep: p.regeling.doelgroep,
-      projectfase: p.regeling.projectfase,
-      toegestane_aanvragers: p.regeling.toegestane_aanvragers,
-      uitgesloten_aanvragers: p.regeling.uitgesloten_aanvragers,
-      harde_criteria: p.regeling.harde_criteria,
-      uitsluitingscriteria: p.regeling.uitsluitingscriteria
-    })), null, 2);
-
-    const matchPrompt = `Je bent een subsidie-analist. Match het opgegeven project tegen de regelingen van ${fondsData.fonds_naam}.
-Geef ELKE regeling een match_score van 0 tot 100 (niet HOOG/MIDDEL/LAAG, maar een exact getal).
-
-Scorebereik:
-- 80-100: Uitstekende match, geen blokkades
-- 60-79: Goede match, kleine risico's
-- 40-59: Matige match, meerdere onzekerheden
-- 20-39: Zwakke match, significante bezwaren
-- 1-19: Zeer onwaarschijnlijk
-- 0: Uitgesloten (deze zijn al verwijderd, gebruik 0 niet)
-
-PROJECT:
-- Naam: ${projectData.naam || 'niet opgegeven'}
-- Rechtsvorm: ${projectData.rechtsvorm?.join(', ') || 'niet opgegeven'}
-- Disciplines: ${projectData.disciplines?.join(', ') || 'niet opgegeven'}
-- Carrierefase: ${projectData.fase?.join(', ') || 'niet opgegeven'}
-- Woonplaats: ${projectData.regio || 'niet opgegeven'}
-- Projectomschrijving: ${projectData.projectOmschrijving || 'niet opgegeven'}
-- Primair doel: ${projectData.doel?.join(', ') || 'niet opgegeven'}
-- Projectfase: ${projectData.faseProj?.join(', ') || 'niet opgegeven'}
-- Type activiteit: ${projectData.typeProject?.join(', ') || 'niet opgegeven'}
-- Maatschappelijke focus: ${projectData.sociaal?.join(', ') || 'geen'}
-- Gevraagd bedrag: ${projectData.bedrag?.join(', ') || 'onbekend'}
-${projectData.alleOntvangen?.length > 0 ? '- Eerder ontvangen: ' + projectData.alleOntvangen.join(', ') : ''}
-${projectData.websiteContext ? '\nPORTFOLIO/WEBSITE:\n' + projectData.websiteContext.substring(0, 1000) : ''}
-
-REGELINGEN (al voorgefilterd op rechtsvorm):
-${regelingenJson}
-
-Geef uitsluitend JSON output. Begin met [ en eindig met ].
-
-JSON schema per regeling:
-[
-  {
-    "regeling_naam": "string",
-    "match_score": number (0-100),
-    "doelgroep": "string",
-    "toegestane_aanvragers": ["string"],
-    "uitgesloten_aanvragers": ["string"],
-    "is_project_uitgesloten": false,
-    "uitsluitingsreden": "",
-    "match_motivatie": "string (2-4 zinnen)",
-    "kansen": ["string"],
-    "blokkades": ["string (harde criteria/risico's die het project raken)"],
-    "aanbeveling": "string (1 zin concreet advies)"
-  }
-]
-
-Regels:
-- Wees eerlijk over blokkades.
-- Als deadline verstreken of ONZEKER: benoem dit en verlaag score.
-- Score is een getal, geen tekst.`;
-
-    const rawText = await callClaude(claudeKey, [{ role:'user', content: matchPrompt }], 4000);
-    let claudeMatches;
-    try {
-      const m = rawText.match(/```json\s*([\s\S]*?)\s*```/) || rawText.match(/(\[[\s\S]*\])/);
-      claudeMatches = JSON.parse(m ? m[1] : rawText);
-    } catch(e) { throw new Error('Match JSON parse mislukt: ' + e.message); }
-
-    // Merge Claude results with schema fields
-    for (const cm of claudeMatches) {
-      const score = typeof cm.match_score === 'number' ? Math.max(0, Math.min(100, cm.match_score)) : 0;
-      results.push({
-        regeling_naam: cm.regeling_naam || '',
-        match_score: score,
-        doelgroep: cm.doelgroep || '',
-        toegestane_aanvragers: cm.toegestane_aanvragers || [],
-        uitgesloten_aanvragers: cm.uitgesloten_aanvragers || [],
-        is_project_uitgesloten: false,
-        uitsluitingsreden: '',
-        match_motivatie: cm.match_motivatie || '',
-        kansen: cm.kansen || [],
-        blokkades: cm.blokkades || [],
-        aanbeveling: cm.aanbeveling || ''
-      });
-    }
-  }
-
-  return results;
-}
-
-// ════════════════════════════════════════════════════════════════
-//  FULL PIPELINE (requirement 1 — linear flow)
+//  FULL PIPELINE — database scan + Claude analysis
 // ════════════════════════════════════════════════════════════════
 async function runFullPipeline() {
   // Collect & validate
   const pd = collectProjectData();
-  const startUrl = getKey('startUrl');
 
   const keyErrors = validateKeys();
   const projErrors = validateProjectData(pd);
   const allErrors = [...keyErrors, ...projErrors];
-  if (!startUrl) allErrors.push('Vul een website URL in van het fonds.');
   if (showValidationErrors(allErrors)) return;
 
   document.getElementById('validationErrors').style.display = 'none';
@@ -1218,40 +896,131 @@ async function runFullPipeline() {
 
   // Switch to progress view
   showSection('sectionProgress');
-  updatePipeline('crawl');
+  updatePipeline('scan');
+  document.getElementById('logBox').innerHTML = '';
 
   try {
-    // Phase 1: Crawl
-    const { fondsData, pageCount } = await executeCrawl(startUrl, getKey('claudeApiKey'), getKey('apifyToken'), getKey('serpApiKey'));
-    appState.fondsData = fondsData;
+    // Step 1 — Profile analysis
+    setStep(1, 'active', 'Profiel analyseren...');
+    log('Klantprofiel geladen: ' + (pd.naam || 'kunstenaar'));
+    log(`Disciplines: ${pd.disciplines.join(', ') || 'niet opgegeven'}`);
+    log(`Rechtsvorm: ${pd.rechtsvorm.join(', ') || 'niet opgegeven'}`);
+    log(`Regio: ${pd.regio || 'niet opgegeven'}`);
+    await sleep(300);
+    setStep(1, 'done', 'Profiel geanalyseerd');
 
-    // Validate crawl result
-    const fondsErrors = validateFondsData(fondsData);
-    if (fondsErrors.length > 0) throw new Error(fondsErrors.join('; '));
+    // Step 2 — Pre-score fondsen from database
+    setStep(2, 'active', 'Fondsen matchen...');
+    log(`Database: ${FONDSEN_DB.length} fondsen beschikbaar`);
+    const ranked = preScoreFondsen(pd);
+    const topFondsen = ranked.slice(0, 10); // take top 10 candidates for Claude
+    log(`${ranked.length} fondsen matchen op profiel — top ${topFondsen.length} geselecteerd`, 'ok');
+    topFondsen.forEach((f, i) => log(`  ${i+1}. ${f.naam} (prescore ${f._score})`));
+    setStep(2, 'done', `${topFondsen.length} fondsen geselecteerd`);
 
-    // Phase 2: Match engine
-    setStep(5, 'active', 'Match engine starten...');
-    updatePipeline('match');
-    log('Match engine gestart — uitsluitingscheck + scoring...');
+    if (topFondsen.length === 0) {
+      throw new Error('Geen passende fondsen gevonden. Controleer je disciplines en rechtsvorm.');
+    }
 
-    const matchResults = await matchEngine(fondsData, pd, getKey('claudeApiKey'));
-    appState.matchResult = matchResults;
+    // Step 3 — Claude deep analysis
+    setStep(3, 'active', 'Claude analyseert top fondsen...');
+    log('Claude API aanroepen voor diepte-analyse...');
 
-    log(`Match klaar — ${matchResults.length} regelingen gescoord`, 'ok');
-    setStep(5, 'done', `${matchResults.length} regelingen gescoord`);
+    const fondsListJson = JSON.stringify(topFondsen.map(f => ({
+      naam: f.naam,
+      focus: f.focus,
+      url: f.url,
+      disciplines: f.disciplines,
+      rechtsvormen: f.rechtsvormen,
+      regio: f.regio || null,
+      sociaal: f.sociaal || null
+    })), null, 2);
 
-    // Phase 3: Render
-    setStep(6, 'active', 'Resultaten opbouwen...');
-    renderResults(fondsData, matchResults, startUrl, pageCount);
-    setStep(6, 'done', 'Gereed');
+    const scanPrompt = `Je bent een subsidie-analist voor Nederlandse kunst- en cultuurfondsen.
+
+PROJECT:
+- Naam: ${pd.naam || 'niet opgegeven'}
+- Rechtsvorm: ${pd.rechtsvorm?.join(', ') || 'niet opgegeven'}
+- Disciplines: ${pd.disciplines?.join(', ') || 'niet opgegeven'}
+- Carrierefase: ${pd.fase?.join(', ') || 'niet opgegeven'}
+- Woonplaats: ${pd.regio || 'niet opgegeven'}
+- Culturele achtergrond: ${pd.achtergrond || 'niet opgegeven'}
+- Projectomschrijving: ${pd.projectOmschrijving || 'niet opgegeven'}
+- Primair doel: ${pd.doel?.join(', ') || 'niet opgegeven'}
+- Projectfase: ${pd.faseProj?.join(', ') || 'niet opgegeven'}
+- Type activiteit: ${pd.typeProject?.join(', ') || 'niet opgegeven'}
+- Maatschappelijke focus: ${pd.sociaal?.join(', ') || 'geen'}
+- Gevraagd bedrag: ${pd.bedrag?.join(', ') || 'onbekend'}
+- Extra context: ${pd.extraContext || 'geen'}
+${pd.alleOntvangen?.length > 0 ? '- Eerder ontvangen: ' + pd.alleOntvangen.join(', ') : ''}
+${pd.websiteContext ? '\nPORTFOLIO/WEBSITE:\n' + pd.websiteContext.substring(0, 1200) : ''}
+${pd.documentContext ? '\nDOCUMENT CONTEXT:\n' + pd.documentContext.substring(0, 800) : ''}
+
+FONDSEN (voorgefilterd op discipline en rechtsvorm):
+${fondsListJson}
+
+OPDRACHT:
+Analyseer elk fonds en geef een match_score van 0-100 per fonds.
+Focus op:
+1. UITSLUITINGSCRITERIA (priority 1): Is de rechtsvorm van de aanvrager compatibel?
+2. Discipline match: Past het project bij het fonds?
+3. Fase/profiel match: Past de carrierefase en het type project?
+4. Regio: Regionale fondsen alleen relevant als aanvrager in dat gebied zit
+5. Sociaal/thematisch: Sluit het thema aan?
+
+Scorebereik:
+- 80-100: Uitstekende match
+- 60-79: Goede match, kleine risico's
+- 40-59: Matige match
+- 20-39: Zwakke match
+- 0: Uitgesloten (rechtsvorm niet compatibel)
+
+Geef de TOP 8 best matchende fondsen. Geef uitsluitend JSON output.
+Begin met [ en eindig met ].
+
+[
+  {
+    "fonds_naam": "string",
+    "fonds_url": "string",
+    "match_score": number (0-100),
+    "disciplines_match": "string (welke disciplines matchen)",
+    "regeling_suggestie": "string (meest geschikte regeling of type)",
+    "deadline_info": "string (als bekend, anders 'Controleer website')",
+    "bedrag_info": "string (als bekend, anders 'Zie website')",
+    "fase_match": "string (welke fase past)",
+    "risico_factoren": ["string (max 3 risico's/aandachtspunten)"],
+    "match_motivatie": "string (2-3 zinnen waarom dit fonds past)",
+    "aanbeveling": "string (1 concrete actie/tip)"
+  }
+]`;
+
+    const claudeKey = getKey('claudeApiKey');
+    const rawText = await callClaude(claudeKey, [{ role: 'user', content: scanPrompt }], 4000);
+    let scanResults;
+    try { scanResults = parseJsonResponse(rawText); } catch(e) { throw new Error('Claude JSON parse mislukt: ' + e.message); }
+
+    // Normalize scores
+    scanResults = scanResults.map(r => ({
+      ...r,
+      match_score: typeof r.match_score === 'number' ? Math.max(0, Math.min(100, r.match_score)) : 0
+    })).sort((a, b) => b.match_score - a.match_score).slice(0, 8);
+
+    appState.matchResult = scanResults;
+    log(`Claude analyse klaar — ${scanResults.length} fondsen gescoord`, 'ok');
+    setStep(3, 'done', `${scanResults.length} fondsen geanalyseerd`);
+
+    // Step 4 — Render results
+    setStep(4, 'active', 'Resultaten samenstellen...');
+    renderScanResults(scanResults, pd);
+    setStep(4, 'done', 'Gereed');
 
     await sleep(400);
     showSection('sectionResults');
-    updatePipeline('match');
+    updatePipeline('results');
 
   } catch(err) {
     log(`FOUT: ${err.message}`, 'err');
-    [1,2,3,4,5,6].forEach(n => {
+    [1,2,3,4].forEach(n => {
       if (document.getElementById(`step${n}`)?.classList.contains('active'))
         setStep(n, 'error', err.message);
     });
@@ -1259,151 +1028,88 @@ async function runFullPipeline() {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  RENDERING — COMBINED RESULTS
+//  RENDERING — SCAN RESULTS (card-based layout)
 // ════════════════════════════════════════════════════════════════
-function scoreClass(score) {
-  if (score >= 70) return 'score-high';
-  if (score >= 40) return 'score-mid';
-  if (score > 0) return 'score-low';
-  return 'score-excluded';
-}
-
-function scoreLabel(score, isExcluded) {
-  if (isExcluded) return 'UITGESLOTEN';
-  if (score >= 70) return `${score} — HOOG`;
-  if (score >= 40) return `${score} — MIDDEL`;
-  return `${score} — LAAG`;
-}
-
-function renderResults(fondsData, matches, sourceUrl, pageCount) {
+function renderScanResults(results, project) {
   const now = new Date().toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
   document.getElementById('resultMeta').textContent =
-    `${now} — ${fondsData.fonds_naam} × ${appState.projectData.naam || 'project'} — ${matches.length} regelingen — ${pageCount} bronpagina's`;
-
-  // Fonds banner
-  document.getElementById('fondsBanner').innerHTML = `
-    <div class="fonds-banner">
-      <div class="fonds-banner-icon">🏛</div>
-      <div class="fonds-banner-text">
-        <h3>${escHtml(fondsData.fonds_naam || 'Onbekend fonds')}</h3>
-        <p>${escHtml(fondsData.fonds_omschrijving || '')}</p>
-      </div>
-      <div class="fonds-banner-url"><a href="${escHtml(fondsData.fonds_url || sourceUrl)}" target="_blank" rel="noopener">${escHtml(fondsData.fonds_url || sourceUrl)} ↗</a></div>
-    </div>`;
-
-  // Fonds score = highest regeling score (requirement 2)
-  const fondsScore = matches.reduce((max, m) => Math.max(max, m.match_score || 0), 0);
-  document.getElementById('fondsScoreBanner').innerHTML = `
-    <div class="fonds-score-banner">
-      <div class="fonds-score-num">${fondsScore}</div>
-      <div class="fonds-score-label">
-        <strong>Fondsscore (hoogste regeling)</strong>
-        ${fondsScore >= 70 ? 'Er zijn regelingen met een goede match.' : fondsScore >= 40 ? 'Matige match — controleer details.' : fondsScore > 0 ? 'Lage match — weinig geschikt.' : 'Geen geschikte regelingen gevonden.'}
-      </div>
-    </div>`;
-
-  // Sort: highest score first, excluded at bottom
-  const sorted = [...matches].sort((a, b) => {
-    if (a.is_project_uitgesloten && !b.is_project_uitgesloten) return 1;
-    if (!a.is_project_uitgesloten && b.is_project_uitgesloten) return -1;
-    return (b.match_score || 0) - (a.match_score || 0);
-  });
-
-  const eligible = sorted.filter(m => !m.is_project_uitgesloten);
-  const excluded = sorted.filter(m => m.is_project_uitgesloten);
+    `${now} — ${project.naam || project.disciplines?.join(', ') || 'project'} — ${results.length} fondsen geanalyseerd`;
 
   let html = '';
+  results.forEach((r, i) => {
+    html += renderFondsCard(r, i);
+  });
 
-  if (eligible.length > 0) {
-    html += `<div class="results-divider">✓ Geschikte regelingen (${eligible.length})</div>`;
-    html += eligible.map((m, i) => renderMatchCard(m, i, 'elig')).join('');
+  if (results.length === 0) {
+    html = '<div style="text-align:center;padding:3rem;color:var(--muted);"><div style="font-size:2rem;margin-bottom:0.5rem;">🔍</div><h3>Geen passende fondsen gevonden</h3><p>Probeer je disciplines of rechtsvorm aan te passen.</p></div>';
   }
 
-  if (excluded.length > 0) {
-    html += `<div class="results-divider">🚫 Uitgesloten regelingen (${excluded.length})</div>`;
-    html += excluded.map((m, i) => renderMatchCard(m, eligible.length + i, 'excl')).join('');
-  }
+  document.getElementById('scanResultCards').innerHTML = html;
 
-  if (sorted.length === 0) {
-    html = '<div class="empty-state"><div class="es-icon">🔍</div><h3>Geen regelingen gevonden</h3><p>Probeer een specifiekere fonds-URL.</p></div>';
-  }
-
-  document.getElementById('matchCards').innerHTML = html;
-
-  // Open first eligible card
-  if (eligible.length > 0) toggleResultCard('elig', 0);
-
-  // Raw JSON
-  document.getElementById('resultRawJson').textContent = JSON.stringify({
-    fonds: fondsData,
-    matches: matches
-  }, null, 2);
+  // Open first card
+  if (results.length > 0) toggleResultCard(0);
 }
 
-function renderMatchCard(m, i, prefix) {
-  const sc = scoreClass(m.match_score);
-  const sl = scoreLabel(m.match_score, m.is_project_uitgesloten);
-  const isExcluded = m.is_project_uitgesloten;
+function renderFondsCard(r, i) {
+  const score = r.match_score || 0;
+  const sc = score >= 70 ? 'score-high' : score >= 40 ? 'score-mid' : score > 0 ? 'score-low' : 'score-excluded';
+  const sl = score >= 70 ? `${score} — HOOG` : score >= 40 ? `${score} — MIDDEL` : score > 0 ? `${score} — LAAG` : 'UITGESLOTEN';
+  const fillClass = score >= 70 ? '' : score >= 40 ? 'mid' : 'low';
 
-  // Find original regeling for evidence & criteria
-  const origRegeling = (appState.fondsData?.regelingen || []).find(r => r.naam === m.regeling_naam) || {};
-
-  const criteria = (origRegeling.harde_criteria||[]).map(c =>
-    `<div class="criteria-item hard"><span class="ci-dot">→</span><span>${markUncertain(escHtml(c))}</span></div>`).join('');
-  const excl = (origRegeling.uitsluitingscriteria||[]).map(c =>
-    `<div class="criteria-item excl"><span class="ci-dot">✕</span><span>${markUncertain(escHtml(c))}</span></div>`).join('');
-  const evidence = (origRegeling.evidence||[]).map(ev =>
-    `<div class="evidence-item"><a class="evidence-url" href="${escHtml(ev.url)}" target="_blank">${escHtml(ev.url)}</a><div class="evidence-quote">"${markUncertain(escHtml(ev.quote||''))}"</div></div>`).join('');
-
-  const kansen = (m.kansen||[]).map(k=>`<li style="margin:0.15rem 0;font-size:0.82rem;">${escHtml(k)}</li>`).join('');
-  const blokkades = (m.blokkades||[]).map(b=>`<li style="margin:0.15rem 0;font-size:0.82rem;">${escHtml(b)}</li>`).join('');
+  const risicos = (r.risico_factoren || []).map(rf =>
+    `<li style="margin:0.15rem 0;font-size:0.82rem;">${escHtml(rf)}</li>`).join('');
 
   return `
-  <div class="regeling-card${isExcluded ? ' excluded' : ''}">
-    <div class="regeling-header" onclick="toggleResultCard('${prefix}',${i})" id="${prefix}hdr${i}">
-      <div class="regeling-name">${escHtml(m.regeling_naam||'Onbekende regeling')}</div>
-      <span class="score-badge ${sc}">${sl}</span>
-      <span class="chevron" id="${prefix}chev${i}">▾</span>
-    </div>
-    <div class="regeling-body" id="${prefix}body${i}">
-      ${isExcluded ? `
-        <div class="exclusion-banner">
-          <div class="excl-icon">🚫</div>
-          <div class="excl-text">
-            <strong>Uitgesloten — score 0</strong>
-            ${escHtml(m.uitsluitingsreden || 'Reden onbekend')}
-          </div>
-        </div>` : ''}
-      <p class="match-motivation">${escHtml(m.match_motivatie||'')}</p>
-      <div class="data-grid">
-        <div class="data-cell highlight"><div class="dc-label">Openstelling</div><div class="dc-value">${markUncertain(escHtml(origRegeling.openstelling||'—'))}</div></div>
-        <div class="data-cell highlight"><div class="dc-label">Deadline</div><div class="dc-value">${markUncertain(escHtml(origRegeling.deadline||'—'))}</div></div>
-        <div class="data-cell"><div class="dc-label">Min. bedrag</div><div class="dc-value">${markUncertain(escHtml(origRegeling.min_bedrag||'—'))}</div></div>
-        <div class="data-cell"><div class="dc-label">Max. bedrag</div><div class="dc-value">${markUncertain(escHtml(origRegeling.max_bedrag||'—'))}</div></div>
-        <div class="data-cell"><div class="dc-label">Discipline</div><div class="dc-value">${markUncertain(escHtml(origRegeling.discipline||'—'))}</div></div>
-        <div class="data-cell"><div class="dc-label">Doelgroep</div><div class="dc-value">${markUncertain(escHtml(m.doelgroep || origRegeling.doelgroep||'—'))}</div></div>
-        <div class="data-cell"><div class="dc-label">Toegestane aanvragers</div><div class="dc-value">${markUncertain(escHtml((m.toegestane_aanvragers||origRegeling.toegestane_aanvragers||[]).join(', ')||'—'))}</div></div>
-        <div class="data-cell"><div class="dc-label">Uitgesloten aanvragers</div><div class="dc-value">${markUncertain(escHtml((m.uitgesloten_aanvragers||origRegeling.uitgesloten_aanvragers||[]).join(', ')||'—'))}</div></div>
+  <div class="regeling-card">
+    <div class="regeling-header" onclick="toggleResultCard(${i})" id="rchdr${i}">
+      <div style="flex:1;min-width:0;">
+        <div class="regeling-name">${escHtml(r.fonds_naam || 'Onbekend fonds')}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.1rem;">${escHtml(r.regeling_suggestie || '')}</div>
       </div>
-      ${!isExcluded && kansen ? `<div style="margin-bottom:0.65rem;"><div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.35rem;">✓ Kansen</div><ul style="padding-left:1.1rem;">${kansen}</ul></div>` : ''}
-      ${blokkades ? `<div class="match-blockers"><h5>⚠️ Blokkades / risico's</h5><ul style="padding-left:1rem;">${blokkades}</ul></div>` : ''}
-      ${criteria ? `<div class="criteria-section" style="margin-top:0.75rem;"><h4>Harde criteria</h4><div class="criteria-list">${criteria}</div></div>` : ''}
-      ${excl ? `<div class="criteria-section"><h4>⚠️ Uitsluitingscriteria</h4><div class="criteria-list">${excl}</div></div>` : ''}
-      ${evidence ? `<div class="evidence-section"><h4>Bronvermelding</h4>${evidence}</div>` : ''}
-      ${m.aanbeveling ? `<div style="margin-top:0.75rem;padding:0.65rem 0.9rem;background:#f3f1fc;border-radius:9px;font-size:0.82rem;color:var(--primary);font-weight:600;">💡 ${escHtml(m.aanbeveling)}</div>` : ''}
+      <span class="score-badge ${sc}">${sl}</span>
+      <span class="chevron" id="rcchev${i}">▾</span>
+    </div>
+    <div class="regeling-body" id="rcbody${i}">
+      <p class="match-motivation">${escHtml(r.match_motivatie || '')}</p>
+
+      <div class="score-bar-wrap" style="margin-bottom:0.85rem;">
+        <div style="display:flex;justify-content:space-between;font-size:0.76rem;margin-bottom:0.25rem;"><span>Matchscore</span><strong>${score}%</strong></div>
+        <div class="score-bar"><div class="score-fill ${fillClass}" style="width:${score}%;"></div></div>
+      </div>
+
+      <div class="data-grid">
+        <div class="data-cell"><div class="dc-label">Website</div><div class="dc-value"><a href="${escHtml(r.fonds_url || '#')}" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:none;">${escHtml(r.fonds_url || '—')} ↗</a></div></div>
+        <div class="data-cell"><div class="dc-label">Disciplines</div><div class="dc-value">${escHtml(r.disciplines_match || '—')}</div></div>
+        <div class="data-cell highlight"><div class="dc-label">Regeling</div><div class="dc-value">${escHtml(r.regeling_suggestie || '—')}</div></div>
+        <div class="data-cell highlight"><div class="dc-label">Deadline</div><div class="dc-value">${escHtml(r.deadline_info || 'Controleer website')}</div></div>
+        <div class="data-cell"><div class="dc-label">Fase</div><div class="dc-value">${escHtml(r.fase_match || '—')}</div></div>
+        <div class="data-cell"><div class="dc-label">Bedrag</div><div class="dc-value">${escHtml(r.bedrag_info || 'Zie website')}</div></div>
+      </div>
+
+      ${risicos ? `<div style="margin-top:0.75rem;"><div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.35rem;">⚠️ Risico's / aandachtspunten</div><ul style="padding-left:1.1rem;">${risicos}</ul></div>` : ''}
+
+      ${r.aanbeveling ? `<div style="margin-top:0.75rem;padding:0.65rem 0.9rem;background:#f3f1fc;border-radius:9px;font-size:0.82rem;color:var(--primary);font-weight:600;">💡 ${escHtml(r.aanbeveling)}</div>` : ''}
     </div>
   </div>`;
 }
 
-function toggleResultCard(prefix, i) {
-  const body = document.getElementById(`${prefix}body${i}`);
-  const chev = document.getElementById(`${prefix}chev${i}`);
-  const hdr  = document.getElementById(`${prefix}hdr${i}`);
+function toggleResultCard(i) {
+  const body = document.getElementById(`rcbody${i}`);
+  const chev = document.getElementById(`rcchev${i}`);
+  const hdr  = document.getElementById(`rchdr${i}`);
   if (!body) return;
   const isOpen = body.classList.contains('open');
   body.classList.toggle('open', !isOpen);
   if (chev) chev.classList.toggle('open', !isOpen);
   if (hdr)  hdr.classList.toggle('open', !isOpen);
+}
+
+function copyScanResult() {
+  if (!appState.matchResult) return;
+  navigator.clipboard.writeText(JSON.stringify(appState.matchResult, null, 2)).then(() => {
+    const b = event.target; b.textContent = '✓ Gekopieerd!';
+    setTimeout(() => b.textContent = '📋 Kopieren', 2000);
+  });
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1595,10 +1301,11 @@ function resetAll() {
     if(el){ el.className = el.className.includes('preview') ? 'context-preview' : 'status-msg'; }
   });
   document.getElementById('logBox').innerHTML = '';
-  [1,2,3,4,5,6].forEach(n => {
+  document.getElementById('scanResultCards').innerHTML = '';
+  [1,2,3,4].forEach(n => {
     setStep(n, '', '');
     const d = document.getElementById(`step${n}detail`);
-    if(d) d.textContent = n === 2 ? 'Pollen elke 5 seconden...' : '';
+    if(d) d.textContent = '';
   });
   document.getElementById('validationErrors').style.display = 'none';
   showSection('sectionProject');
