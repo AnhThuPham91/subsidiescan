@@ -722,8 +722,20 @@ async function callClaude(claudeKey, messages, maxTokens = 4000) {
 }
 
 function parseJsonResponse(text) {
-  const m = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/(\{[\s\S]*\})/) || text.match(/(\[[\s\S]*\])/);
-  return JSON.parse(m ? m[1] : text);
+  // Try: ```json ... ```
+  let m = text.match(/```json\s*([\s\S]*?)\s*```/);
+  if (m) try { return JSON.parse(m[1]); } catch {}
+  // Try: ``` ... ```
+  m = text.match(/```\s*([\s\S]*?)\s*```/);
+  if (m) try { return JSON.parse(m[1]); } catch {}
+  // Try: outermost [ ... ]
+  m = text.match(/(\[[\s\S]*\])/);
+  if (m) try { return JSON.parse(m[1]); } catch {}
+  // Try: outermost { ... }
+  m = text.match(/(\{[\s\S]*\})/);
+  if (m) try { return JSON.parse(m[1]); } catch {}
+  // Last resort: raw text
+  return JSON.parse(text);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -997,7 +1009,18 @@ Begin met [ en eindig met ].
     const claudeKey = getKey('claudeApiKey');
     const rawText = await callClaude(claudeKey, [{ role: 'user', content: scanPrompt }], 4000);
     let scanResults;
-    try { scanResults = parseJsonResponse(rawText); } catch(e) { throw new Error('Claude JSON parse mislukt: ' + e.message); }
+    try {
+      scanResults = parseJsonResponse(rawText);
+    } catch(e) {
+      log('Claude raw output: ' + rawText.substring(0, 500), 'warn');
+      throw new Error('Claude JSON parse mislukt: ' + e.message);
+    }
+    if (!Array.isArray(scanResults)) {
+      // If Claude returned an object with a key containing the array
+      const arr = scanResults.fondsen || scanResults.results || scanResults.matches || scanResults.data;
+      if (Array.isArray(arr)) { scanResults = arr; }
+      else { throw new Error('Claude gaf geen array terug. Probeer opnieuw.'); }
+    }
 
     // Normalize scores
     scanResults = scanResults.map(r => ({
