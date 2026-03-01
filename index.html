@@ -511,6 +511,16 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.55; }
       <label>Culturele achtergrond <span class="sublabel">(optioneel)</span></label>
       <input type="text" id="achtergrond" placeholder="bijv. Vietnamese roots, Surinaamse achtergrond...">
     </div>
+
+    <div class="field">
+      <label>Caribisch Nederland <span class="sublabel">(achtergrond of thema)</span></label>
+      <p class="field-note">Selecteer als je afkomstig bent van de Caribische eilanden (Bonaire, Sint Eustatius, Saba, Aruba, Curaçao, Sint Maarten) of als je project een Caribisch thema heeft.</p>
+      <div class="tag-group" id="caribischTags" data-single="true">
+        <span class="tag" data-val="caribische achtergrond">Caribische achtergrond</span>
+        <span class="tag" data-val="caribisch thema">Caribisch thema</span>
+        <span class="tag" data-val="beide">Beide</span>
+      </div>
+    </div>
   </div>
 
   <!-- ── Sectie 2: Portfolio & Documenten ── -->
@@ -730,9 +740,9 @@ const FONDSEN_DB = [
   { naam:"Cultuurfonds", focus:"project over meerdere disciplines", url:"https://www.cultuurfonds.nl", disciplines:["beeldende kunst","muziek","theater","dans","literatuur","fotografie","erfgoed","interdisciplinair","mode/textiel"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","vereniging","kunstenaarscollectief (informeel)"] },
   { naam:"Fonds voor Cultuurparticipatie", focus:"participatie, educatie, amateurkunst", url:"https://cultuurparticipatie.nl", disciplines:["educatie","podiumkunsten","muziek","dans","theater","beeldende kunst"], rechtsvormen:["stichting","vereniging"] },
   { naam:"Fonds ZOZ", focus:"polarisatie en radicalisering verminderen in NL", url:"https://fondszoz.nl", disciplines:["interdisciplinair","theater","muziek","beeldende kunst","film"], sociaal:"polarisatie/radicalisering", rechtsvormen:["individuele kunstenaar (zzp)","stichting","vereniging"] },
-  { naam:"DNB Fonds", focus:"trans-Atlantisch slavernij erfgoed, Caribisch NL", url:"https://www.cultuurfonds.nl/fondsen/dnb-fonds", disciplines:["beeldende kunst","theater","dans","literatuur","interdisciplinair","film"], sociaal:"trans-Atlantisch slavernij/erfgoed", rechtsvormen:["individuele kunstenaar (zzp)","stichting","vereniging"] },
+  { naam:"DNB Fonds", focus:"trans-Atlantisch slavernij erfgoed, Caribisch NL", url:"https://www.cultuurfonds.nl/fondsen/dnb-fonds", disciplines:["beeldende kunst","theater","dans","literatuur","interdisciplinair","film"], sociaal:"trans-Atlantisch slavernij/erfgoed", caribisch:true, rechtsvormen:["individuele kunstenaar (zzp)","stichting","vereniging"] },
   { naam:"VSBFonds", focus:"educatie, participatie, cultuur", url:"https://www.vsbfonds.nl", disciplines:["beeldende kunst","muziek","theater","dans","podiumkunsten"], rechtsvormen:["stichting","vereniging","individuele kunstenaar (zzp)"] },
-  { naam:"Amsterdam Fonds voor de Kunsten", focus:"Amsterdam-gebaseerde kunstenaars", url:"https://www.amsterdamsfondsvoordekunsten.nl", disciplines:["beeldende kunst","muziek","theater","dans","film","literatuur","interdisciplinair","fotografie"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","kunstenaarscollectief (informeel)"], regio:"amsterdam" },
+  { naam:"Amsterdam Fonds voor de Kunsten", focus:"Amsterdam-gebaseerde kunstenaars", url:"https://www.amsterdamsfondsvoordekunst.nl", disciplines:["beeldende kunst","muziek","theater","dans","film","literatuur","interdisciplinair","fotografie"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","kunstenaarscollectief (informeel)"], regio:"amsterdam" },
   { naam:"Prins Clausfonds", focus:"kunstenaars met niet-Europese culturele achtergrond", url:"https://princeclausfund.nl", disciplines:["interdisciplinair","beeldende kunst","dans","muziek","theater","film"], rechtsvormen:["individuele kunstenaar (zzp)","stichting"] },
   { naam:"Dioraphte", focus:"podiumkunsten, erfgoed, sociale initiatieven Afrika/NL", url:"https://dioraphte.nl", disciplines:["theater","dans","muziek","erfgoed","beeldende kunst","podiumkunsten"], rechtsvormen:["stichting","vereniging"] },
   { naam:"Stichting DOEN", focus:"sociale en culturele vernieuwing, klimaat", url:"https://www.doen.nl", disciplines:["interdisciplinair","theater","beeldende kunst","muziek","dans"], sociaal:"sociaal-maatschappelijk", rechtsvormen:["stichting","vereniging"] },
@@ -744,9 +754,8 @@ const FONDSEN_DB = [
   { naam:"NPO Fonds", focus:"video, audio, talentontwikkeling", url:"https://npo.nl/npofonds", disciplines:["film","digitale cultuur","muziek"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","bv/nv (commercieel)"] },
   { naam:"Ammodo Art", focus:"internationaal toonaangevende beeldende kunst en podiumkunst", url:"https://www.ammodo-art.org", disciplines:["beeldende kunst","dans","theater","muziek","podiumkunsten"], rechtsvormen:["stichting","vereniging"] },
   { naam:"Stroom Den Haag", focus:"beeldende kunst Den Haag", url:"https://stroom.nl", disciplines:["beeldende kunst","fotografie","digitale cultuur"], rechtsvormen:["individuele kunstenaar (zzp)","stichting"], regio:"den haag" },
-  { naam:"CBK Rotterdam", focus:"beeldende kunst Rotterdam", url:"https://cbk.nl", disciplines:["beeldende kunst","fotografie","interdisciplinair"], rechtsvormen:["individuele kunstenaar (zzp)","stichting"], regio:"rotterdam" },
+  { naam:"CBK Rotterdam", focus:"beeldende kunst Rotterdam", url:"https://www.cbkrotterdam.nl", disciplines:["beeldende kunst","fotografie","interdisciplinair"], rechtsvormen:["individuele kunstenaar (zzp)","stichting"], regio:"rotterdam" },
   { naam:"Filmcommission NL", focus:"feature film, animatie, documentaire", url:"https://filmcommission.nl/fund-financing/", disciplines:["film"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","bv/nv (commercieel)"] },
-  { naam:"Cultuurfonds — Prins Bernhard", focus:"diverse disciplines, regionaal fonds", url:"https://www.cultuurfonds.nl/prins-bernhard-cultuurfonds", disciplines:["beeldende kunst","muziek","theater","dans","literatuur","erfgoed","film"], rechtsvormen:["individuele kunstenaar (zzp)","stichting","vereniging","kunstenaarscollectief (informeel)"] },
   { naam:"Fondskwadraat", focus:"rentevrije leningen onder €8.000", url:"https://www.fondskwadraat.nl", disciplines:["beeldende kunst","muziek","theater","dans","interdisciplinair","design"], rechtsvormen:["individuele kunstenaar (zzp)","kunstenaarscollectief (informeel)"] },
 ];
 
@@ -987,6 +996,7 @@ function collectProject() {
     carriereFase:        getSelected('faseTags'),
     regio:               getV('regio'),
     achtergrond:         getV('achtergrond'),
+    caribisch:           getSelected('caribischTags'),
     projectOmschrijving: getV('projectOmschrijving'),
     projectFase:         getSelected('faseProjTags'),
     locatie:             getSelected('locatieTags'),
@@ -1052,6 +1062,9 @@ function selectFondsForDiscovery(project) {
     }
     // Cultural background → Prins Clausfonds bonus
     if (project.achtergrond && f.naam.toLowerCase().includes('prins claus')) score += 6;
+    // Caribisch Nederland bonus
+    if (project.caribisch?.length > 0 && f.caribisch) score += 10;
+    if (project.caribisch?.length > 0 && f.naam.toLowerCase().includes('prins claus')) score += 4;
     return {...f, score};
   })
   .filter(f => f.score > 0)
@@ -1059,6 +1072,100 @@ function selectFondsForDiscovery(project) {
   .slice(0, 4); // Max 4 fondsen to keep analysis manageable
 
   return scored;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DISCOVERY — search for additional funds beyond FONDSEN_DB
+═══════════════════════════════════════════════════════════════ */
+async function discoverAdditionalFonds(project) {
+  const knownNames = new Set(FONDSEN_DB.map(f => f.naam.toLowerCase()));
+  const disc = project.disciplines.join(', ') || 'kunst';
+  const rv = project.rechtsvorm.join(', ') || '';
+  const caribisch = project.caribisch?.length > 0 ? ' Caribisch Nederland' : '';
+
+  // Build targeted search queries based on project profile
+  const queries = [
+    `subsidie fonds ${disc} kunstenaar Nederland`,
+    `stichting fonds ${disc} subsidie aanvragen`,
+    `kleine fondsen ${disc} kunstenaar${caribisch}`,
+    `cultureel fonds ${disc} bijdrage aanvraag`
+  ];
+
+  // Add project-specific queries
+  if (project.sociaal?.length > 0) queries.push(`fonds ${project.sociaal.join(' ')} kunst subsidie`);
+  if (project.caribisch?.length > 0) queries.push(`subsidie fonds Caribisch Nederland kunst cultuur`);
+  if (project.achtergrond) queries.push(`fonds culturele diversiteit ${project.achtergrond} kunstenaar`);
+
+  const discoveredMap = new Map(); // url → { naam, url, snippet }
+
+  for (const q of queries.slice(0, 5)) { // Max 5 queries to conserve API calls
+    try {
+      const resp = await fetch(`https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(q)}&api_key=${appState.apiKeys.serp}&num=10`);
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      (data.organic_results || []).forEach(r => {
+        if (!r.link) return;
+        const domain = new URL(r.link).hostname.replace('www.','');
+        // Skip known funds from FONDSEN_DB
+        const isKnown = FONDSEN_DB.some(f => r.link.includes(new URL(f.url).hostname.replace('www.','')));
+        if (isKnown) return;
+        // Skip generic sites (not actual funds)
+        const skipDomains = ['google.','wikipedia.','facebook.','instagram.','linkedin.','youtube.','rijksoverheid.nl','overheid.nl','kvk.nl','belastingdienst.nl','indeed.','werkenbij','vacature'];
+        if (skipDomains.some(d => domain.includes(d))) return;
+        if (!discoveredMap.has(domain)) {
+          discoveredMap.set(domain, { naam: r.title || domain, url: r.link, snippet: r.snippet || '' });
+        }
+      });
+    } catch(e) { /* skip */ }
+  }
+
+  if (discoveredMap.size === 0) return [];
+
+  // Use Claude to evaluate which discovered sites are actual funds worth crawling
+  const candidates = Array.from(discoveredMap.values()).slice(0, 12);
+  const evalPrompt = `Je bent een expert in Nederlandse kunst- en cultuursubsidies.
+Hieronder staan websites gevonden via een zoekopdracht. Bepaal welke ECHTE fondsen of stichtingen zijn die subsidies/bijdragen geven aan kunstenaars of culturele projecten.
+
+Project disciplines: ${disc}
+Rechtsvorm: ${rv}
+${project.caribisch?.length > 0 ? 'Caribisch Nederland relevant: ja' : ''}
+
+KANDIDATEN:
+${candidates.map((c,i) => `${i+1}. ${c.naam}\n   URL: ${c.url}\n   ${c.snippet}`).join('\n\n')}
+
+Geef UITSLUITEND JSON terug — een array van objecten voor fondsen die ECHT subsidies/bijdragen verstrekken.
+Negeer: commerciële sites, nieuwssites, overheidslokketten, vacaturesites, social media.
+
+[
+  {
+    "naam": "string (korte naam fonds)",
+    "url": "string (homepage URL van het fonds)",
+    "focus": "string (waarvoor geeft dit fonds subsidies, max 10 woorden)",
+    "relevance": "string (waarom relevant voor dit project, max 10 woorden)"
+  }
+]
+
+Als geen enkele kandidaat een echt fonds is, geef een lege array: []`;
+
+  try {
+    const rawText = await callClaude([{role:'user', content: evalPrompt}], 1500);
+    const m = rawText.match(/```json\s*([\s\S]*?)\s*```/) || rawText.match(/(\[[\s\S]*\])/);
+    const parsed = JSON.parse(m ? m[1] : rawText);
+    if (!Array.isArray(parsed)) return [];
+
+    // Convert to FONDSEN_DB-like format and return max 2 extra funds
+    return parsed.slice(0, 2).map(f => ({
+      naam: f.naam,
+      focus: f.focus || '',
+      url: f.url,
+      disciplines: project.disciplines, // Assume match since Claude said relevant
+      rechtsvormen: project.rechtsvorm.length > 0 ? project.rechtsvorm : ["individuele kunstenaar (zzp)","stichting"],
+      _discovered: true, // Mark as discovered (not from DB)
+      score: 5 // Base score for discovered funds
+    }));
+  } catch(e) {
+    return []; // Silent fail — discovery is best-effort
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1317,6 +1424,11 @@ function computeScore(reg, project) {
   // Culturele achtergrond
   if (project.achtergrond&&allRegText.includes('culturele achtergrond')) s+=8;
 
+  // Caribisch Nederland
+  if (project.caribisch?.length > 0) {
+    if (allRegText.includes('caribi')||allRegText.includes('antill')||allRegText.includes('bonaire')||allRegText.includes('curaçao')||allRegText.includes('saba')||allRegText.includes('sint eustatius')||allRegText.includes('slavernij')||allRegText.includes('trans-atlant')) s+=10;
+  }
+
   return Math.max(0, Math.min(100, Math.round(s)));
 }
 
@@ -1410,10 +1522,27 @@ async function startDiscovery() {
     setPhase(1); return;
   }
 
-  initFondsPB(selectedFonds);
-  log(`${selectedFonds.length} fondsen geselecteerd: ${selectedFonds.map(f=>f.naam).join(', ')}`, 'ok');
+  // Discovery: search for additional funds beyond FONDSEN_DB
+  log('Zoeken naar aanvullende fondsen buiten de database...', 'ok');
+  let discoveredFonds = [];
+  try {
+    discoveredFonds = await discoverAdditionalFonds(appState.project);
+    if (discoveredFonds.length > 0) {
+      log(`${discoveredFonds.length} extra fonds(en) ontdekt: ${discoveredFonds.map(f=>f.naam).join(', ')}`, 'ok');
+    } else {
+      log('Geen aanvullende fondsen gevonden — doorgaan met database-selectie.', 'warn');
+    }
+  } catch(e) {
+    log(`Discovery overgeslagen: ${e.message}`, 'warn');
+  }
 
-  await runFullSubsidyDiscovery(selectedFonds, appState.project);
+  // Combine: DB-selected + discovered (max 6 total)
+  const allFonds = [...selectedFonds, ...discoveredFonds].slice(0, 6);
+
+  initFondsPB(allFonds);
+  log(`${allFonds.length} fondsen geselecteerd: ${allFonds.map(f=>f.naam).join(', ')}${discoveredFonds.length>0?' (incl. '+discoveredFonds.length+' ontdekt)':''}`, 'ok');
+
+  await runFullSubsidyDiscovery(allFonds, appState.project);
 }
 
 async function runFullSubsidyDiscovery(selectedFonds, project) {
@@ -1498,67 +1627,71 @@ async function runFullSubsidyDiscovery(selectedFonds, project) {
    RENDERING — RESULTS
 ═══════════════════════════════════════════════════════════════ */
 function renderResults() {
-  const matches = appState.matchResults;
-  const proj    = appState.project;
-  const now     = new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
+  const allMatches = appState.matchResults;
+  const proj       = appState.project;
+  const now        = new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
+
+  // Filter: only show matches >= 50%
+  const MIN_SCORE = 50;
+  const matches   = allMatches.filter(r => r._score >= MIN_SCORE);
+  const nHidden   = allMatches.length - matches.length;
 
   document.getElementById('resMeta').textContent =
     `${now} — ${proj.naam||proj.disciplines.join(', ')||'project'} — ${appState.crawlResults.length} fondsen geanalyseerd`;
 
-  // Stat bar
+  // Stat bar (showing only visible matches)
   const nH=matches.filter(r=>r._label==='HOOG').length;
   const nM=matches.filter(r=>r._label==='MIDDEL').length;
-  const nL=matches.filter(r=>r._label==='LAAG').length;
-  const nU=matches.filter(r=>r._label==='UITGESLOTEN').length;
   document.getElementById('statBar').innerHTML = `
     <div class="stat green"><div class="stat-n">${nH}</div><div class="stat-l">Hoog</div></div>
     <div class="stat orange"><div class="stat-n">${nM}</div><div class="stat-l">Middel</div></div>
-    <div class="stat"><div class="stat-n">${nL}</div><div class="stat-l">Laag</div></div>
-    <div class="stat red"><div class="stat-n">${nU}</div><div class="stat-l">Uitgesloten</div></div>
-    <div class="stat blue"><div class="stat-n">${matches.length}</div><div class="stat-l">Totaal</div></div>`;
+    <div class="stat blue"><div class="stat-n">${matches.length}</div><div class="stat-l">Getoond</div></div>
+    ${nHidden>0?`<div class="stat"><div class="stat-n" style="font-size:1rem;color:var(--muted);">${nHidden}</div><div class="stat-l">Verborgen (&lt;50%)</div></div>`:''}`;
 
-  // Group by fonds, render sections
+  // Group by fonds, render sections — only show fonds sections that have visible matches
   let html = '';
   let globalIdx = 0;
 
   appState.crawlResults.forEach(({ fonds, crawlData, matched }) => {
-    const nFH=matched.filter(r=>r._label==='HOOG').length;
-    const nFM=matched.filter(r=>r._label==='MIDDEL').length;
-    const nFL=matched.filter(r=>r._label==='LAAG').length;
-    const nFU=matched.filter(r=>r._label==='UITGESLOTEN').length;
+    const visibleMatched = matched.filter(r => r._score >= MIN_SCORE);
+    if (visibleMatched.length === 0) return; // Skip fonds with no visible matches
+
+    const nFH=visibleMatched.filter(r=>r._label==='HOOG').length;
+    const nFM=visibleMatched.filter(r=>r._label==='MIDDEL').length;
+    const nFHidden=matched.length - visibleMatched.length;
 
     html += `
       <div class="fonds-section-hd">
-        <span class="fsh-icon">🏛</span>
+        <span class="fsh-icon">${fonds._discovered?'🔎':'🏛'}</span>
         <div class="fsh-text">
-          <h3>${esc(crawlData.fonds_naam||fonds.naam)}</h3>
+          <h3>${esc(crawlData.fonds_naam||fonds.naam)}${fonds._discovered?' <span style="font-size:.65rem;color:var(--muted);font-family:DM Sans,sans-serif;font-weight:500;">(ontdekt)</span>':''}</h3>
           <p>${esc(crawlData.fonds_omschrijving||fonds.focus||'')}</p>
         </div>
         <div class="fsh-counts">
           ${nFH?`<span class="count-badge cb-hoog">${nFH} HOOG</span>`:''}
           ${nFM?`<span class="count-badge cb-middel">${nFM} MIDDEL</span>`:''}
-          ${nFL?`<span class="count-badge cb-laag">${nFL} LAAG</span>`:''}
-          ${nFU?`<span class="count-badge cb-uitg">${nFU} UITG</span>`:''}
+          ${nFHidden>0?`<span class="count-badge cb-uitg">${nFHidden} verborgen</span>`:''}
         </div>
         <div class="fsh-url"><a href="${esc(crawlData.fonds_url||fonds.url)}" target="_blank" rel="noopener">${esc(crawlData.fonds_url||fonds.url)} ↗</a></div>
       </div>`;
 
-    matched.forEach(reg => {
+    visibleMatched.forEach(reg => {
       html += renderMatchCard(reg, globalIdx++);
     });
   });
 
-  document.getElementById('resultsBody').innerHTML = html || '<div style="text-align:center;padding:3rem;color:var(--muted);">🔍 Geen regelingen gevonden.</div>';
+  document.getElementById('resultsBody').innerHTML = html || '<div style="text-align:center;padding:3rem;color:var(--muted);">Geen regelingen met 50% of hoger gevonden. Probeer je profiel aan te passen.</div>';
 
   // Open first HOOG card
-  const firstHoog = appState.matchResults.findIndex(r=>r._label==='HOOG');
+  const firstHoog = matches.findIndex(r=>r._label==='HOOG');
   if (firstHoog>=0) toggleCard(firstHoog);
 
-  // Raw JSON
+  // Raw JSON (includes all results, including hidden)
   document.getElementById('rawJson').textContent = JSON.stringify({
     project: appState.project,
     crawlResults: appState.crawlResults.map(c=>({ fonds:c.fonds.naam, regelingen:c.crawlData.regelingen?.length })),
-    matches: appState.matchResults
+    matches: allMatches,
+    filter: { minScore: MIN_SCORE, shown: matches.length, hidden: nHidden }
   }, null, 2);
 }
 
