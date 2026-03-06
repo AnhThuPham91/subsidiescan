@@ -104,29 +104,6 @@ header {
 .pill { background: #fff; border: 1px solid var(--border); border-radius: 100px; padding: .2rem .6rem; font-size: .69rem; color: var(--primary); font-weight: 500; }
 
 /* ═══════════════════════════════════════════════════════════════
-   API KEYS
-═══════════════════════════════════════════════════════════════ */
-.keys-wrap {
-  background: linear-gradient(135deg,#faf8ff,#f5f0ff);
-  border: 1px solid var(--accent); border-radius: 18px;
-  padding: 1.2rem 1.7rem; margin-bottom: 1.4rem;
-}
-.keys-wrap summary {
-  cursor: pointer; font-family: 'DM Serif Display', serif; font-size: .92rem; color: var(--primary);
-  list-style: none; display: flex; align-items: center; gap: .5rem;
-}
-.keys-wrap summary::after { content: '▾'; margin-left: auto; color: var(--muted); }
-details[open].keys-wrap summary::after { content: '▴'; }
-.keys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-top: .9rem; }
-@media(max-width:540px){ .keys-grid { grid-template-columns: 1fr; } }
-.kf label { display: block; font-size: .7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .28rem; }
-.key-row { position: relative; }
-.key-row input { padding-right: 3.2rem !important; font-family: monospace; font-size: .76rem; }
-.key-toggle { position: absolute; right: .65rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--muted); font-size: .7rem; padding: .15rem .3rem; }
-.keys-status { font-size: .7rem; margin-top: .35rem; color: var(--muted); }
-.keys-status.ok { color: var(--ok-text); font-weight: 600; }
-
-/* ═══════════════════════════════════════════════════════════════
    FORM FIELDS
 ═══════════════════════════════════════════════════════════════ */
 .field { margin-bottom: 1rem; }
@@ -420,36 +397,10 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.55; }
     </div>
   </div>
 
-  <!-- API Keys -->
-  <details class="keys-wrap" id="keysDetails" open>
-    <summary>🔑 API Sleutels</summary>
-    <div class="keys-grid">
-      <div class="kf">
-        <label>Claude API Key</label>
-        <div class="key-row">
-          <input type="password" id="claudeKey" placeholder="sk-ant-api03-..." oninput="syncKeys()">
-          <button class="key-toggle" onclick="toggleKey('claudeKey',this)">toon</button>
-        </div>
-      </div>
-      <div class="kf">
-        <label>Apify API Token</label>
-        <div class="key-row">
-          <input type="password" id="apifyToken" placeholder="apify_api_..." oninput="syncKeys()">
-          <button class="key-toggle" onclick="toggleKey('apifyToken',this)">toon</button>
-        </div>
-      </div>
-      <div class="kf">
-        <label>SerpAPI Key</label>
-        <div class="key-row">
-          <input type="password" id="serpKey" placeholder="serpapi_key_..." oninput="syncKeys()">
-          <button class="key-toggle" onclick="toggleKey('serpKey',this)">toon</button>
-        </div>
-      </div>
-      <div class="kf" style="display:flex;align-items:flex-end;">
-        <p class="keys-status" id="keysStatus">Vul alle drie sleutels in om te beginnen.</p>
-      </div>
-    </div>
-  </details>
+  <!-- Hidden API key inputs (auto-loaded from .env via /api/keys or localStorage) -->
+  <input type="hidden" id="claudeKey">
+  <input type="hidden" id="apifyToken">
+  <input type="hidden" id="serpKey">
 
   <!-- ── Sectie 1: Klantprofiel ── -->
   <div class="card">
@@ -806,21 +757,97 @@ function setPhase(n) {
 /* ═══════════════════════════════════════════════════════════════
    KEY MANAGEMENT
 ═══════════════════════════════════════════════════════════════ */
-function toggleKey(id, btn) {
-  const el = document.getElementById(id);
-  el.type = el.type==='password' ? 'text' : 'password';
-  btn.textContent = el.type==='password' ? 'toon' : 'verberg';
-}
-
 function syncKeys() {
   appState.apiKeys.claude = getV('claudeKey');
   appState.apiKeys.apify  = getV('apifyToken');
   appState.apiKeys.serp   = getV('serpKey');
-  const allFilled = appState.apiKeys.claude && appState.apiKeys.apify && appState.apiKeys.serp;
-  const el = document.getElementById('keysStatus');
-  el.textContent = allFilled ? '✓ Alle sleutels ingevuld' : 'Vul alle drie sleutels in om te beginnen.';
-  el.className   = 'keys-status' + (allFilled ? ' ok' : '');
   updateCta();
+}
+
+/* ── Auto-load API keys: .env → localStorage → setup dialog ── */
+(async function loadKeys() {
+  // Try 1: .env via local server
+  try {
+    const resp = await fetch('/api/keys');
+    if (resp.ok) {
+      const keys = await resp.json();
+      if (keys.claudeApiKey && keys.apifyToken && keys.serpApiKey) {
+        document.getElementById('claudeKey').value  = keys.claudeApiKey;
+        document.getElementById('apifyToken').value  = keys.apifyToken;
+        document.getElementById('serpKey').value      = keys.serpApiKey;
+        syncKeys();
+        console.log('API keys geladen uit .env');
+        return;
+      }
+    }
+  } catch { /* not on localhost — continue */ }
+
+  // Try 2: localStorage
+  const saved = localStorage.getItem('subsidietool_keys');
+  if (saved) {
+    try {
+      const keys = JSON.parse(saved);
+      if (keys.claudeApiKey && keys.apifyToken && keys.serpApiKey) {
+        document.getElementById('claudeKey').value  = keys.claudeApiKey;
+        document.getElementById('apifyToken').value  = keys.apifyToken;
+        document.getElementById('serpKey').value      = keys.serpApiKey;
+        syncKeys();
+        console.log('API keys geladen uit localStorage');
+        return;
+      }
+    } catch { /* corrupt data — continue */ }
+  }
+
+  // Try 3: Show setup dialog
+  showKeySetupDialog();
+})();
+
+function showKeySetupDialog() {
+  const overlay = document.createElement('div');
+  overlay.id = 'keySetupOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(26,24,48,0.6);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:center;justify-content:center;padding:1.5rem;';
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:2rem 2.25rem;max-width:460px;width:100%;box-shadow:0 12px 40px rgba(74,63,165,0.2);">
+      <div style="font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--primary);margin-bottom:0.35rem;">🔑 API Keys instellen</div>
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.5;">
+        Eenmalige setup — je keys worden veilig opgeslagen in je browser en worden niet gedeeld.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:0.85rem;">
+        <div>
+          <label style="font-size:0.73rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Claude API Key</label>
+          <input type="password" id="setupClaudeKey" placeholder="sk-ant-api03-..." style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;font-family:monospace;font-size:0.78rem;margin-top:0.25rem;">
+        </div>
+        <div>
+          <label style="font-size:0.73rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Apify API Token</label>
+          <input type="password" id="setupApifyToken" placeholder="apify_api_..." style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;font-family:monospace;font-size:0.78rem;margin-top:0.25rem;">
+        </div>
+        <div>
+          <label style="font-size:0.73rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">SerpAPI Key</label>
+          <input type="password" id="setupSerpKey" placeholder="serpapi_key_..." style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;font-family:monospace;font-size:0.78rem;margin-top:0.25rem;">
+        </div>
+      </div>
+      <button onclick="saveKeySetup()" style="width:100%;padding:0.85rem;margin-top:1.25rem;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;border:none;border-radius:12px;font-family:'DM Serif Display',serif;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 14px rgba(74,63,165,0.25);">✓ Opslaan & doorgaan</button>
+      <p style="font-size:0.68rem;color:var(--muted);text-align:center;margin-top:0.75rem;line-height:1.4;">
+        Keys worden opgeslagen in localStorage van je browser.<br>Ze verlaten nooit je apparaat.
+      </p>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function saveKeySetup() {
+  const claudeKey  = document.getElementById('setupClaudeKey').value.trim();
+  const apifyToken = document.getElementById('setupApifyToken').value.trim();
+  const serpKey     = document.getElementById('setupSerpKey').value.trim();
+  if (!claudeKey || !apifyToken || !serpKey) { alert('Vul alle drie de keys in.'); return; }
+  localStorage.setItem('subsidietool_keys', JSON.stringify({
+    claudeApiKey: claudeKey, apifyToken: apifyToken, serpApiKey: serpKey
+  }));
+  document.getElementById('claudeKey').value  = claudeKey;
+  document.getElementById('apifyToken').value  = apifyToken;
+  document.getElementById('serpKey').value      = serpKey;
+  syncKeys();
+  document.getElementById('keySetupOverlay').remove();
+  console.log('API keys opgeslagen in localStorage');
 }
 
 /* ═══════════════════════════════════════════════════════════════
