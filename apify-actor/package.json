@@ -1,0 +1,31 @@
+{
+  "name": "subsidiescan-crawler",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Playwright-based crawler voor subsidie-websites met PDF support en slimme link-filtering.",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@crawlee/playwright": "^3.0.0",
+    "apify": "^3.0.0",
+    "pdf-parse": "^1.1.1",
+    "playwright": "*"
+  },
+  "devDependencies": {
+    "@apify/eslint-config": "^1.0.0",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "prettier": "^3.5.3"
+  },
+  "scripts": {
+    "start": "node src/main.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "test": "echo \"Error: no tests yet\" && exit 1"
+  },
+  "author": "Anh Thu Pham",
+  "license": "ISC"
+}
