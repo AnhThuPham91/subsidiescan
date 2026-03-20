@@ -1050,7 +1050,7 @@ async function callClaude(messages, maxTokens=4096) {
       'anthropic-dangerous-direct-browser-access': 'true',
       'x-api-key': appState.apiKeys.claude
     },
-    body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens: maxTokens, messages })
+    body: JSON.stringify({ model:'claude-3-5-sonnet-20241022', max_tokens: maxTokens, messages })
   });
   const data = await resp.json();
   if (!resp.ok || data.error) throw new Error(data.error?.message || `Claude fout ${resp.status}`);
