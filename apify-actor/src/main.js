@@ -146,7 +146,73 @@ const crawler = new PlaywrightCrawler({
       // networkidle timeout is ok, pagina is waarschijnlijk al geladen
     }
 
-    // Verwijder ruis-elementen
+    // ── ACCORDEONS OPENKLIKKEN ────────────────────────────────────
+    // Veel fondsen-websites verbergen cruciale info achter uitklapbare secties
+    try {
+      await page.evaluate(async () => {
+        // Strategie 1: Klik op <details> elements (HTML5 native accordeons)
+        document.querySelectorAll('details:not([open])').forEach(d => d.setAttribute('open', ''));
+
+        // Strategie 2: Klik op veelvoorkomende accordeon-knoppen
+        const accordionSelectors = [
+          '[class*="accordion"] [class*="header"]',
+          '[class*="accordion"] [class*="title"]',
+          '[class*="accordion"] button',
+          '[class*="collapse"] [class*="header"]',
+          '[class*="toggle"]',
+          '[class*="expandable"] [class*="header"]',
+          '[class*="faq"] [class*="question"]',
+          '[data-toggle="collapse"]',
+          '[aria-expanded="false"]',
+          '.expand-btn', '.read-more', '.show-more',
+          'button[class*="expand"]',
+          'h2[role="button"]', 'h3[role="button"]', 'h4[role="button"]',
+          '[class*="tab-"] a', '[class*="tabs"] a', '[role="tab"]',
+        ];
+
+        for (const sel of accordionSelectors) {
+          const elements = document.querySelectorAll(sel);
+          for (const el of elements) {
+            try {
+              el.click();
+              // Wacht even tot content laadt
+              await new Promise(r => setTimeout(r, 150));
+            } catch (e) { /* skip */ }
+          }
+        }
+
+        // Strategie 3: Maak verborgen content zichtbaar via CSS
+        document.querySelectorAll('[style*="display: none"], [style*="display:none"], [hidden], .hidden, .collapsed, .collapse:not(.show)').forEach(el => {
+          el.style.display = 'block';
+          el.style.visibility = 'visible';
+          el.removeAttribute('hidden');
+          el.classList.remove('hidden', 'collapsed');
+          el.classList.add('show');
+        });
+
+        // Strategie 4: aria-expanded="false" → force open
+        document.querySelectorAll('[aria-expanded="false"]').forEach(el => {
+          el.setAttribute('aria-expanded', 'true');
+          // Zoek het bijbehorende panel
+          const targetId = el.getAttribute('aria-controls');
+          if (targetId) {
+            const panel = document.getElementById(targetId);
+            if (panel) {
+              panel.style.display = 'block';
+              panel.style.visibility = 'visible';
+              panel.classList.add('show');
+            }
+          }
+        });
+      });
+
+      // Wacht tot dynamische content is geladen na het klikken
+      await page.waitForTimeout(500);
+    } catch (e) {
+      log.debug(`Accordion expansion failed for ${url}: ${e.message}`);
+    }
+
+    // Verwijder ruis-elementen (NA het openklikken van accordeons)
     await page.evaluate(() => {
       const selectors = [
         'nav','header','footer',
@@ -164,7 +230,7 @@ const crawler = new PlaywrightCrawler({
     const title = await page.title();
     const contentType = 'text/html';
 
-    // Tekst extractie uit gezuiverde pagina
+    // Tekst extractie uit gezuiverde pagina (nu inclusief geopende accordeons)
     const text = await page.evaluate(() => {
       const body = document.querySelector('body');
       if (!body) return '';
