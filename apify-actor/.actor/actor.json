@@ -1,0 +1,10 @@
+{
+  "actorSpecification": 1,
+  "name": "my-actor",
+  "title": "Subsidiescan Crawler",
+  "description": "Playwright-based crawler voor subsidie-websites met PDF support en slimme link-filtering.",
+  "version": "1.0",
+  "buildTag": "latest",
+  "environmentVariables": {},
+  "usesStandbyMode": false
+}

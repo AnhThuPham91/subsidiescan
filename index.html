@@ -1412,10 +1412,13 @@ Vandaag: ${new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',yea
 
 DOEL: Extraheer ELKE individuele regeling, subsidie, beurs, residency of open call.
 
-KRITIEK — ALLEEN ACTUELE REGELINGEN:
-- Negeer regelingen waarvan de deadline VERSTREKEN is (voor vandaag).
-- Negeer pagina's van ${currentYear-2} of ouder tenzij de regeling doorlopend/jaarlijks is.
-- Als een regeling jaarlijks terugkeert maar de exacte ${currentYear}/${currentYear+1} data niet bekend zijn, vermeld dit.
+KRITIEK — ALLEEN ACTUELE REGELINGEN (${currentYear}/${currentYear+1}):
+- NEGEER regelingen waarvan de deadline VERSTREKEN is (voor vandaag).
+- NEGEER pagina's van ${currentYear-2} of ouder TENZIJ de regeling doorlopend/jaarlijks is.
+- Als een regeling jaarlijks terugkeert maar exacte ${currentYear}/${currentYear+1} data onbekend zijn: schrijf "jaarlijks terugkerend, exacte data ${currentYear} nog niet gepubliceerd".
+- Bij residencies: vermeld ALTIJD wat je krijgt (verblijf, atelier, maaltijden, etc.) PLUS het financiële bedrag.
+- Schrijf NOOIT "ONZEKER" als het bedrag op de pagina staat — lees de bron zorgvuldig.
+- Als er een bedrag staat zoals "€ 6.600 vaste bijdrage": dat IS het bedrag, extraheer het.
 
 EXTRAHEER PER REGELING:
 1. TYPE: Is dit een subsidie, beurs, residency, lening, open call, of opdracht? Vermeld dit expliciet.
@@ -1635,16 +1638,37 @@ function updateProgUI() {
   const steps = document.getElementById('progSteps');
   if (!title) return;
 
-  if (progState.done === 0) {
-    title.textContent = 'Subsidies zoeken op basis van je profiel...';
-  } else if (progState.done < progState.total) {
-    title.textContent = `Bronnen analyseren... (${progState.done}/${progState.total})`;
-  } else {
-    title.textContent = 'Resultaten worden opgesteld...';
-  }
+  const phase = progState.phase || 'search';
+  const phases = {
+    search: { title: 'Passende subsidies zoeken via Google...', icon: '🔍' },
+    crawl: { title: `Websites analyseren... (${progState.done}/${progState.total})`, icon: '🕸' },
+    extract: { title: 'AI extraheert subsidiegegevens...', icon: '🤖' },
+    match: { title: 'Resultaten worden opgesteld...', icon: '⚡' }
+  };
+
+  const p = phases[phase] || phases.search;
+  title.textContent = p.title;
 
   if (progState.current) {
     subtitle.textContent = progState.current;
+  }
+
+  // Show step indicators
+  if (steps) {
+    const stepData = [
+      { key: 'search', label: 'Google zoeken naar subsidies', icon: '🔍' },
+      { key: 'crawl', label: 'Websites crawlen', icon: '🕸' },
+      { key: 'extract', label: 'AI analyse', icon: '🤖' },
+      { key: 'match', label: 'Matching', icon: '⚡' }
+    ];
+    const phaseOrder = ['search','crawl','extract','match'];
+    const currentIdx = phaseOrder.indexOf(phase);
+    steps.innerHTML = stepData.map((s, i) => {
+      const status = i < currentIdx ? '✓' : i === currentIdx ? '●' : '○';
+      const opacity = i <= currentIdx ? '1' : '0.4';
+      const weight = i === currentIdx ? '700' : '400';
+      return `<div style="display:flex;align-items:center;gap:.5rem;margin:.4rem 0;opacity:${opacity};font-weight:${weight};"><span style="width:1.2rem;text-align:center;">${i < currentIdx ? '✅' : s.icon}</span><span>${s.label}</span>${i === currentIdx ? '<span style="color:var(--primary);font-size:.75rem;margin-left:auto;">bezig...</span>' : ''}</div>`;
+    }).join('');
   }
 }
 
@@ -1684,6 +1708,8 @@ async function startDiscovery() {
   }
 
   // ── RunFullSearch: deep search + profile discovery via SerpAPI
+  progState.phase = 'search';
+  updateProgUI();
   log('SerpAPI orchestrator: deep search + profielzoekopdracht starten...', 'ok');
   let discoveredFonds = [];
   if (appState.apiKeys.serp) {
@@ -1716,6 +1742,8 @@ async function runFullSubsidyDiscovery(selectedFonds, project) {
   let allMatchedRegelingen = [];
 
   for (const fonds of selectedFonds) {
+    progState.phase = 'crawl';
+    updateProgUI();
     setFondsPB(fonds.naam, 'active', 'Bezig...');
     log(`--- Starten: ${fonds.naam} ---`);
 
@@ -1743,6 +1771,8 @@ async function runFullSubsidyDiscovery(selectedFonds, project) {
       log(`${pages.length} pagina's opgehaald`, 'ok');
 
       // ── Step 4: Claude extractie
+      progState.phase = 'extract';
+      updateProgUI();
       setMiniStep(fonds.naam, 4, 'active');
       setFondsPB(fonds.naam, 'active', 'Claude analyseert...');
       const MAX_CH = 8500;
@@ -1764,6 +1794,8 @@ async function runFullSubsidyDiscovery(selectedFonds, project) {
       setMiniStep(fonds.naam, 4, 'done');
 
       // ── Step 5: Match
+      progState.phase = 'match';
+      updateProgUI();
       setMiniStep(fonds.naam, 5, 'active');
       const matched = runMatchEngine(regelingen, project);
       // Tag each regeling with its fonds
@@ -1819,7 +1851,7 @@ function renderResults() {
     <div class="stat green"><div class="stat-n">${nH}</div><div class="stat-l">Hoog</div></div>
     <div class="stat orange"><div class="stat-n">${nM}</div><div class="stat-l">Middel</div></div>
     <div class="stat blue"><div class="stat-n">${matches.length}</div><div class="stat-l">Getoond</div></div>
-    ${nHidden>0?`<div class="stat" style="cursor:pointer;" onclick="toggleHiddenResults()"><div class="stat-n" style="font-size:1rem;color:var(--primary);">${nHidden}</div><div class="stat-l" style="color:var(--primary);text-decoration:underline;">Toon verborgen (&lt;50%)</div></div>`:''}`;
+    ${nHidden>0?`<div class="stat hidden-toggle" style="cursor:pointer;background:var(--primary-xlight);border-radius:8px;padding:.4rem .8rem;" onclick="toggleHiddenResults()"><div class="stat-n" style="font-size:1rem;color:var(--primary);">${nHidden}</div><div class="stat-l hidden-toggle-label" style="color:var(--primary);text-decoration:underline;font-weight:600;">Toon verborgen (&lt;50%)</div></div>`:''}`;
 
   // Group by fonds, render sections
   let html = '';
@@ -1938,7 +1970,7 @@ function toggleHiddenResults() {
   const isShowing = hiddenSections[0]?.style.display !== 'none';
   hiddenSections.forEach(el => { el.style.display = isShowing ? 'none' : 'block'; });
   // Update button text
-  const statBtn = document.querySelector('.stat[onclick*="toggleHidden"] .stat-l');
+  const statBtn = document.querySelector('.hidden-toggle-label');
   if (statBtn) statBtn.textContent = isShowing ? 'Toon verborgen (<50%)' : 'Verberg (<50%)';
 }
 
