@@ -1433,6 +1433,8 @@ EXTRAHEER PER REGELING:
 7. PROJECTFASE: onderzoek, productie, presentatie, etc.
 8. HARDE CRITERIA: minimaal aantal jaren ervaring, KvK-vereiste, regiovereiste, etc.
 9. UITSLUITINGSCRITERIA: wie kan NIET aanvragen?
+10. STATUS: Is de regeling nu 'open', 'gesloten', 'doorlopend', of 'binnenkort open'?
+11. BESLISSINGSTIJD: Hoeveel weken/maanden na de deadline krijg je uitslag? Zoek naar zinnen als "binnen X weken bericht", "uiterlijk X maanden na deadline", "behandeltermijn".
 
 REGELS:
 - toegestane_aanvragers: lijst van wie WEL kan aanvragen
@@ -1453,8 +1455,10 @@ Geef UITSLUITEND JSON — begin met { eindig met }.
       "doelgroep": "string (beschrijf primaire doelgroep kort)",
       "toegestane_aanvragers": ["string"],
       "uitgesloten_aanvragers": ["string"],
-      "aanvraagperiode": "string (exacte datums wanneer aanvragen kan, bijv. '22 september t/m 5 oktober 2025')",
-      "deadline": "string (exacte datum, bijv. '5 oktober 2025')",
+      "status": "string ('open' | 'gesloten' | 'doorlopend' | 'binnenkort open')",
+      "aanvraagperiode": "string (exacte datums wanneer aanvragen kan, bijv. '22 september t/m 5 oktober 2025', of 'doorlopend')",
+      "deadline": "string (exacte datum, bijv. '5 oktober 2025', of 'doorlopend' als er geen deadline is)",
+      "beslissingstijd": "string (hoeveel weken/maanden na deadline je uitslag krijgt, bijv. '8 weken' of '3 maanden')",
       "bijdrage": "string (wat krijg je precies? bijv. '€6.600 + verblijf en maaltijden' of '€5.000 projectsubsidie')",
       "min_bedrag": "string (€ bedrag of 'niet gevonden')",
       "max_bedrag": "string (€ bedrag of 'niet gevonden')",
@@ -1857,43 +1861,32 @@ function renderResults() {
   let html = '';
   let globalIdx = 0;
 
+  // Flatten: each regeling becomes its own card with fonds info embedded
+  const allVisible = [];
+  const allHidden = [];
   appState.crawlResults.forEach(({ fonds, crawlData, matched }) => {
-    const visibleMatched = matched.filter(r => r._score >= MIN_SCORE);
-    const hiddenMatched = matched.filter(r => r._score < MIN_SCORE);
+    matched.forEach(reg => {
+      reg._fonds_icon = fonds._discovered ? '🔎' : '🏛';
+      reg._fonds_discovered = !!fonds._discovered;
+      reg._fonds_naam = crawlData.fonds_naam || fonds.naam;
+      reg._fonds_omschrijving = crawlData.fonds_omschrijving || fonds.focus || '';
+      reg._fonds_url = crawlData.fonds_url || fonds.url;
+      if (reg._score >= MIN_SCORE) allVisible.push(reg);
+      else allHidden.push(reg);
+    });
+  });
 
-    if (visibleMatched.length === 0 && hiddenMatched.length === 0) return;
+  allVisible.forEach(reg => {
+    html += renderMatchCard(reg, globalIdx++);
+  });
 
-    const nFH=visibleMatched.filter(r=>r._label==='HOOG').length;
-    const nFM=visibleMatched.filter(r=>r._label==='MIDDEL').length;
-    const nFHidden=hiddenMatched.length;
-
-    html += `
-      <div class="fonds-section-hd">
-        <span class="fsh-icon">${fonds._discovered?'🔎':'🏛'}</span>
-        <div class="fsh-text">
-          <h3>${esc(crawlData.fonds_naam||fonds.naam)}${fonds._discovered?' <span style="font-size:.65rem;color:var(--muted);font-family:DM Sans,sans-serif;font-weight:500;">(ontdekt via Google)</span>':''}</h3>
-          <p>${esc(crawlData.fonds_omschrijving||fonds.focus||'')}</p>
-        </div>
-        <div class="fsh-counts">
-          ${nFH?`<span class="count-badge cb-hoog">${nFH} HOOG</span>`:''}
-          ${nFM?`<span class="count-badge cb-middel">${nFM} MIDDEL</span>`:''}
-        </div>
-        <div class="fsh-url"><a href="${esc(crawlData.fonds_url||fonds.url)}" target="_blank" rel="noopener">${esc(crawlData.fonds_url||fonds.url)} ↗</a></div>
-      </div>`;
-
-    visibleMatched.forEach(reg => {
+  if (allHidden.length > 0) {
+    html += `<div class="hidden-results" style="display:none;">`;
+    allHidden.forEach(reg => {
       html += renderMatchCard(reg, globalIdx++);
     });
-
-    // Verborgen resultaten (hidden by default, toggled via button)
-    if (nFHidden > 0) {
-      html += `<div class="hidden-results" style="display:none;">`;
-      hiddenMatched.forEach(reg => {
-        html += renderMatchCard(reg, globalIdx++);
-      });
-      html += `</div>`;
-    }
-  });
+    html += `</div>`;
+  }
 
   document.getElementById('resultsBody').innerHTML = html || '<div style="text-align:center;padding:3rem;color:var(--muted);">Geen regelingen met 50% of hoger gevonden. Probeer je profiel aan te passen.</div>';
 
@@ -1915,44 +1908,88 @@ function renderMatchCard(reg, i) {
   const fillClass = reg._score>=72?'':reg._score>=48?'mid':'low';
   const toegestane= (reg.toegestane_aanvragers||[]).filter(Boolean);
   const uitgesloten=(reg.uitgesloten_aanvragers||[]).filter(Boolean);
-  const criteria  = (reg.harde_criteria||[]).map(c=>`<div class="ci soft"><span class="ci-dot">→</span><span>${markUncertain(esc(c))}</span></div>`).join('');
-  const exclCrit  = (reg.uitsluitingscriteria||[]).map(c=>`<div class="ci hard"><span class="ci-dot">✕</span><span>${markUncertain(esc(c))}</span></div>`).join('');
+  const criteria  = (reg.harde_criteria||[]).filter(c=>c&&c!=='niet gevonden').map(c=>`<div class="ci soft"><span class="ci-dot">→</span><span>${markUncertain(esc(c))}</span></div>`).join('');
+  const exclCrit  = (reg.uitsluitingscriteria||[]).filter(c=>c&&c!=='niet gevonden').map(c=>`<div class="ci hard"><span class="ci-dot">✕</span><span>${markUncertain(esc(c))}</span></div>`).join('');
   const evidence  = (reg.evidence||[]).map(ev=>`<div class="ev-item"><a class="ev-url" href="${esc(ev.url)}" target="_blank">${esc(ev.url)}</a><div class="ev-quote">"${markUncertain(esc(ev.quote||''))}"</div></div>`).join('');
-  const dtTags    = toegestane.map(t=>`<span class="dt-ok">✓ ${esc(t)}</span>`).join('')+uitgesloten.map(t=>`<span class="dt-warn">✕ ${esc(t)}</span>`).join('');
+  const dtTags    = toegestane.map(t=>`<span class="dt-ok">✓ ${esc(t)}</span>`).join('')+uitgesloten.filter(t=>t!=='niet gevonden').map(t=>`<span class="dt-warn">✕ ${esc(t)}</span>`).join('');
 
-  // Type badge (subsidie, residency, beurs, etc.)
-  const typeLabel = reg.type && reg.type !== 'subsidie' ? ` <span style="font-size:.6rem;background:var(--primary-xlight);color:var(--primary);padding:.1rem .4rem;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;">${esc(reg.type)}</span>` : '';
+  // Type badge
+  const typeBadge = reg.type ? `<span style="font-size:.6rem;background:var(--primary-xlight);color:var(--primary);padding:.15rem .5rem;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">${esc(reg.type)}</span>` : '';
 
-  // Bijdrage (wat krijg je precies)
+  // Bijdrage
   const bijdrage = reg.bijdrage && reg.bijdrage !== 'niet gevonden' ? reg.bijdrage : '';
 
+  // Status badge
+  const statusMap = { open: {bg:'#d4f0e2',color:'#1a5c38',label:'Open'}, gesloten: {bg:'#fde4e4',color:'#7a1010',label:'Gesloten'}, doorlopend: {bg:'#e0edff',color:'#1a3d6b',label:'Doorlopend'}, 'binnenkort open': {bg:'#fef0d6',color:'#7a4a00',label:'Binnenkort open'} };
+  const st = statusMap[(reg.status||'').toLowerCase()] || null;
+  const statusBadge = st ? `<span style="font-size:.6rem;background:${st.bg};color:${st.color};padding:.15rem .5rem;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">${st.label}</span>` : '';
+
+  // Periode tekst: combine aanvraagperiode + deadline into one readable line
+  const periode = reg.aanvraagperiode && reg.aanvraagperiode !== 'niet gevonden' ? reg.aanvraagperiode : '';
+  const deadline = reg.deadline && reg.deadline !== 'niet gevonden' ? reg.deadline : '';
+  let periodeText = '';
+  if (periode && deadline) periodeText = `${periode} — deadline: ${deadline}`;
+  else if (deadline) periodeText = `Deadline: ${deadline}`;
+  else if (periode) periodeText = periode;
+  else periodeText = 'Geen datum bekend';
+
+  // Beslissingstijd
+  const beslissing = reg.beslissingstijd && reg.beslissingstijd !== 'niet gevonden' ? reg.beslissingstijd : '';
+
+  // Bedrag samenvatting
+  const minB = reg.min_bedrag && reg.min_bedrag !== 'niet gevonden' ? reg.min_bedrag : '';
+  const maxB = reg.max_bedrag && reg.max_bedrag !== 'niet gevonden' ? reg.max_bedrag : '';
+  let bedragText = '';
+  if (bijdrage) bedragText = bijdrage;
+  else if (minB && maxB) bedragText = `${minB} – ${maxB}`;
+  else if (maxB) bedragText = `Max. ${maxB}`;
+  else if (minB) bedragText = `Vanaf ${minB}`;
+  else bedragText = '';
+
   return `
-  <div class="rc">
+  <div class="rc" style="margin-bottom:1rem;">
+    <!-- Fonds header integrated -->
+    <div style="padding:.7rem 1.25rem .5rem;background:var(--gradient);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+      <span style="font-size:1.1rem;">${reg._fonds_icon||'🏛'}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:'DM Serif Display',serif;font-size:.85rem;color:var(--primary);font-weight:700;">${esc(reg._fonds_naam||'')}${reg._fonds_discovered?' <span style="font-size:.6rem;color:var(--muted);font-family:DM Sans,sans-serif;font-weight:400;">(via Google)</span>':''}</div>
+      </div>
+      <a href="${esc(reg._fonds_url||'')}" target="_blank" rel="noopener" style="font-size:.68rem;color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:2px;flex-shrink:0;">${esc(reg._fonds_url||'')} ↗</a>
+    </div>
+
+    <!-- Regeling head -->
     <div class="rc-head" id="rch${i}" onclick="toggleCard(${i})">
       <div style="flex:1;min-width:0;">
-        <div class="rc-name">${esc(reg.naam||'Onbekende regeling')}${typeLabel}</div>
-        ${reg.doelgroep?`<div class="rc-sub">${esc(reg.doelgroep)}</div>`:''}
+        <div class="rc-name">${esc(reg.naam||'Onbekende regeling')}</div>
+        <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.25rem;">${typeBadge}${statusBadge}</div>
       </div>
       <span class="score-badge ${sc}">${reg._label}</span>
       ${reg._label!=='UITGESLOTEN'?`<span style="font-size:.7rem;font-weight:700;color:var(--muted);flex-shrink:0;">${reg._score}%</span>`:''}
       <span class="chevron" id="rcc${i}">▾</span>
     </div>
+
+    <!-- Key info strip — always visible -->
+    <div style="padding:.6rem 1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:.5rem .8rem;font-size:.8rem;border-top:1px solid var(--border);background:#fafafe;">
+      <div><span style="font-size:.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.15rem;">Periode & deadline</span><span style="font-weight:600;">${markUncertain(esc(periodeText))}</span></div>
+      <div><span style="font-size:.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.15rem;">Bedrag</span><span style="font-weight:600;">${bedragText ? markUncertain(esc(bedragText)) : '<span style="color:var(--muted);">Niet vermeld</span>'}</span></div>
+      ${beslissing?`<div><span style="font-size:.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.15rem;">Beslissingstijd</span><span style="font-weight:600;">${esc(beslissing)}</span></div>`:''}
+      ${reg.doelgroep&&reg.doelgroep!=='niet gevonden'?`<div><span style="font-size:.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.15rem;">Doelgroep</span><span style="font-weight:600;">${markUncertain(esc(reg.doelgroep))}</span></div>`:''}
+    </div>
+
+    <!-- Expandable body -->
     <div class="rc-body" id="rcb${i}">
       ${reg._is_uitgesloten?`
         <div class="excl-ban">
           <div class="excl-ban-lbl">⛔ Uitgesloten — redenen</div>
           <ul>${(reg._uitsluitingsredenen||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul>
         </div>`:''}
-      ${bijdrage?`<div style="background:var(--ok);border:1px solid var(--ok-border);border-radius:8px;padding:.6rem .8rem;margin-bottom:.8rem;"><div style="font-size:.65rem;font-weight:800;color:var(--ok-text);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.2rem;">Wat krijg je</div><div style="font-size:.88rem;font-weight:600;color:var(--ok-text);">${markUncertain(esc(bijdrage))}</div></div>`:''}
+
       <div class="dg">
-        <div class="dc hl"><div class="dc-lbl">Aanvraagperiode</div><div class="dc-val">${markUncertain(esc(reg.aanvraagperiode||reg.openstelling||'—'))}</div></div>
-        <div class="dc hl"><div class="dc-lbl">Deadline</div><div class="dc-val">${markUncertain(esc(reg.deadline||'—'))}</div></div>
-        <div class="dc"><div class="dc-lbl">Min. bedrag</div><div class="dc-val">${markUncertain(esc(reg.min_bedrag||'—'))}</div></div>
-        <div class="dc"><div class="dc-lbl">Max. bedrag</div><div class="dc-val">${markUncertain(esc(reg.max_bedrag||'—'))}</div></div>
-        <div class="dc"><div class="dc-lbl">Discipline</div><div class="dc-val">${markUncertain(esc(reg.discipline||'—'))}</div></div>
-        <div class="dc"><div class="dc-lbl">Projectfase</div><div class="dc-val">${markUncertain(esc(reg.projectfase||'—'))}</div></div>
-        ${reg.doelgroep?`<div class="dc" style="grid-column:1/-1;"><div class="dc-lbl">Doelgroep</div><div class="dc-val">${markUncertain(esc(reg.doelgroep))}${dtTags?`<div class="dt-tags">${dtTags}</div>`:''}</div></div>`:''}
+        ${reg.discipline&&reg.discipline!=='niet gevonden'?`<div class="dc"><div class="dc-lbl">Discipline</div><div class="dc-val">${markUncertain(esc(reg.discipline))}</div></div>`:''}
+        ${reg.projectfase&&reg.projectfase!=='niet gevonden'?`<div class="dc"><div class="dc-lbl">Projectfase</div><div class="dc-val">${markUncertain(esc(reg.projectfase))}</div></div>`:''}
+        ${reg.doelgroep&&reg.doelgroep!=='niet gevonden'?`<div class="dc" style="grid-column:1/-1;"><div class="dc-lbl">Doelgroep details</div><div class="dc-val">${dtTags?`<div class="dt-tags">${dtTags}</div>`:markUncertain(esc(reg.doelgroep))}</div></div>`:''}
       </div>
+
       ${!reg._is_uitgesloten?`
         <div class="score-bar-wrap">
           <div class="sb-row"><span>Matchscore</span><strong>${reg._score}%</strong></div>
