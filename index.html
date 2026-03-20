@@ -1402,24 +1402,39 @@ async function crawlFonds(fondsUrl, serpUrls, onStatus) {
    CLAUDE EXTRACTION PROMPT
 ═══════════════════════════════════════════════════════════════ */
 function buildExtractionPrompt(bundle, fondsInfo) {
+  const currentYear = new Date().getFullYear();
   return `Je bent een subsidie-analist gespecialiseerd in Nederlandse kunst- en cultuurfondsen.
 Gebruik UITSLUITEND de aangeleverde bronnen. Verzin NIETS.
-Als iets niet expliciet staat: schrijf "ONZEKER – handmatig controleren".
+Als iets niet expliciet staat: schrijf "niet gevonden".
 
 Fonds: ${fondsInfo.naam} — ${fondsInfo.url}
+Vandaag: ${new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'})}
 
-DOEL: Extraheer ELKE individuele regeling met maximale focus op:
-1. Doelgroep en toegestane aanvragers (individu? instelling? stichting? zzp?)
-2. Uitgesloten aanvragers (KRITIEK — zoek: "niet voor", "uitgesloten", "alleen voor", "vereist KvK", "geen individuen", "geen zzp", "alleen instellingen")
-3. Openstelling en deadline (zoek: "opent", "sluit", "deadline", "indienen voor", "aanvraagperiode")
-4. Bedragen (zoek: € bedragen, "maximaal", "minimum", "budget per aanvraag" — NIET totaalbudget fonds)
-5. Projectfase
+DOEL: Extraheer ELKE individuele regeling, subsidie, beurs, residency of open call.
+
+KRITIEK — ALLEEN ACTUELE REGELINGEN:
+- Negeer regelingen waarvan de deadline VERSTREKEN is (voor vandaag).
+- Negeer pagina's van ${currentYear-2} of ouder tenzij de regeling doorlopend/jaarlijks is.
+- Als een regeling jaarlijks terugkeert maar de exacte ${currentYear}/${currentYear+1} data niet bekend zijn, vermeld dit.
+
+EXTRAHEER PER REGELING:
+1. TYPE: Is dit een subsidie, beurs, residency, lening, open call, of opdracht? Vermeld dit expliciet.
+2. DOELGROEP: Wie kan aanvragen? Wie is uitgesloten?
+3. BEDRAGEN: Zoek EXACT naar € bedragen op de pagina.
+   - Bij residencies: noem zowel de financiële bijdrage (€) ALS wat er wordt aangeboden (verblijf, atelier, materiaalbudget, etc.)
+   - "vaste bijdrage", "honorarium", "beurs van": dit zijn bedragen, extraheer ze.
+   - NIET het totaalbudget van het fonds, WEL het bedrag per aanvrager/deelnemer.
+4. AANVRAAGPERIODE: Exacte datums wanneer je kunt aanvragen (van-tot). Niet "openstelling" maar concrete datums.
+5. DEADLINE: Uiterste indiendatum. Geef dag + maand + jaar als beschikbaar.
+6. DISCIPLINE: Voor welke kunstdisciplines?
+7. PROJECTFASE: onderzoek, productie, presentatie, etc.
+8. HARDE CRITERIA: minimaal aantal jaren ervaring, KvK-vereiste, regiovereiste, etc.
+9. UITSLUITINGSCRITERIA: wie kan NIET aanvragen?
 
 REGELS:
 - toegestane_aanvragers: lijst van wie WEL kan aanvragen
 - uitgesloten_aanvragers: lijst van wie NIET kan aanvragen — ALTIJD invullen als info beschikbaar
 - Als pagina zegt "alleen instellingen": zet individuen in uitgesloten_aanvragers
-- Als pagina zegt "ook individuele kunstenaars": zet in toegestane_aanvragers
 - Als totaalbudget zichtbaar is (bijv. "€ 650.000 budget tijdvak"): zet dit NIET als max_bedrag
 
 Geef UITSLUITEND JSON — begin met { eindig met }.
@@ -1431,13 +1446,15 @@ Geef UITSLUITEND JSON — begin met { eindig met }.
   "regelingen": [
     {
       "naam": "string",
+      "type": "subsidie | beurs | residency | lening | open call | opdracht",
       "doelgroep": "string (beschrijf primaire doelgroep kort)",
       "toegestane_aanvragers": ["string"],
       "uitgesloten_aanvragers": ["string"],
-      "openstelling": "string",
-      "deadline": "string",
-      "min_bedrag": "string",
-      "max_bedrag": "string",
+      "aanvraagperiode": "string (exacte datums wanneer aanvragen kan, bijv. '22 september t/m 5 oktober 2025')",
+      "deadline": "string (exacte datum, bijv. '5 oktober 2025')",
+      "bijdrage": "string (wat krijg je precies? bijv. '€6.600 + verblijf en maaltijden' of '€5.000 projectsubsidie')",
+      "min_bedrag": "string (€ bedrag of 'niet gevonden')",
+      "max_bedrag": "string (€ bedrag of 'niet gevonden')",
       "discipline": "string",
       "projectfase": "string",
       "harde_criteria": ["string"],
@@ -1802,31 +1819,32 @@ function renderResults() {
     <div class="stat green"><div class="stat-n">${nH}</div><div class="stat-l">Hoog</div></div>
     <div class="stat orange"><div class="stat-n">${nM}</div><div class="stat-l">Middel</div></div>
     <div class="stat blue"><div class="stat-n">${matches.length}</div><div class="stat-l">Getoond</div></div>
-    ${nHidden>0?`<div class="stat"><div class="stat-n" style="font-size:1rem;color:var(--muted);">${nHidden}</div><div class="stat-l">Verborgen (&lt;50%)</div></div>`:''}`;
+    ${nHidden>0?`<div class="stat" style="cursor:pointer;" onclick="toggleHiddenResults()"><div class="stat-n" style="font-size:1rem;color:var(--primary);">${nHidden}</div><div class="stat-l" style="color:var(--primary);text-decoration:underline;">Toon verborgen (&lt;50%)</div></div>`:''}`;
 
-  // Group by fonds, render sections — only show fonds sections that have visible matches
+  // Group by fonds, render sections
   let html = '';
   let globalIdx = 0;
 
   appState.crawlResults.forEach(({ fonds, crawlData, matched }) => {
     const visibleMatched = matched.filter(r => r._score >= MIN_SCORE);
-    if (visibleMatched.length === 0) return; // Skip fonds with no visible matches
+    const hiddenMatched = matched.filter(r => r._score < MIN_SCORE);
+
+    if (visibleMatched.length === 0 && hiddenMatched.length === 0) return;
 
     const nFH=visibleMatched.filter(r=>r._label==='HOOG').length;
     const nFM=visibleMatched.filter(r=>r._label==='MIDDEL').length;
-    const nFHidden=matched.length - visibleMatched.length;
+    const nFHidden=hiddenMatched.length;
 
     html += `
       <div class="fonds-section-hd">
         <span class="fsh-icon">${fonds._discovered?'🔎':'🏛'}</span>
         <div class="fsh-text">
-          <h3>${esc(crawlData.fonds_naam||fonds.naam)}${fonds._discovered?' <span style="font-size:.65rem;color:var(--muted);font-family:DM Sans,sans-serif;font-weight:500;">(ontdekt)</span>':''}</h3>
+          <h3>${esc(crawlData.fonds_naam||fonds.naam)}${fonds._discovered?' <span style="font-size:.65rem;color:var(--muted);font-family:DM Sans,sans-serif;font-weight:500;">(ontdekt via Google)</span>':''}</h3>
           <p>${esc(crawlData.fonds_omschrijving||fonds.focus||'')}</p>
         </div>
         <div class="fsh-counts">
           ${nFH?`<span class="count-badge cb-hoog">${nFH} HOOG</span>`:''}
           ${nFM?`<span class="count-badge cb-middel">${nFM} MIDDEL</span>`:''}
-          ${nFHidden>0?`<span class="count-badge cb-uitg">${nFHidden} verborgen</span>`:''}
         </div>
         <div class="fsh-url"><a href="${esc(crawlData.fonds_url||fonds.url)}" target="_blank" rel="noopener">${esc(crawlData.fonds_url||fonds.url)} ↗</a></div>
       </div>`;
@@ -1834,6 +1852,15 @@ function renderResults() {
     visibleMatched.forEach(reg => {
       html += renderMatchCard(reg, globalIdx++);
     });
+
+    // Verborgen resultaten (hidden by default, toggled via button)
+    if (nFHidden > 0) {
+      html += `<div class="hidden-results" style="display:none;">`;
+      hiddenMatched.forEach(reg => {
+        html += renderMatchCard(reg, globalIdx++);
+      });
+      html += `</div>`;
+    }
   });
 
   document.getElementById('resultsBody').innerHTML = html || '<div style="text-align:center;padding:3rem;color:var(--muted);">Geen regelingen met 50% of hoger gevonden. Probeer je profiel aan te passen.</div>';
@@ -1861,11 +1888,17 @@ function renderMatchCard(reg, i) {
   const evidence  = (reg.evidence||[]).map(ev=>`<div class="ev-item"><a class="ev-url" href="${esc(ev.url)}" target="_blank">${esc(ev.url)}</a><div class="ev-quote">"${markUncertain(esc(ev.quote||''))}"</div></div>`).join('');
   const dtTags    = toegestane.map(t=>`<span class="dt-ok">✓ ${esc(t)}</span>`).join('')+uitgesloten.map(t=>`<span class="dt-warn">✕ ${esc(t)}</span>`).join('');
 
+  // Type badge (subsidie, residency, beurs, etc.)
+  const typeLabel = reg.type && reg.type !== 'subsidie' ? ` <span style="font-size:.6rem;background:var(--primary-xlight);color:var(--primary);padding:.1rem .4rem;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;">${esc(reg.type)}</span>` : '';
+
+  // Bijdrage (wat krijg je precies)
+  const bijdrage = reg.bijdrage && reg.bijdrage !== 'niet gevonden' ? reg.bijdrage : '';
+
   return `
   <div class="rc">
     <div class="rc-head" id="rch${i}" onclick="toggleCard(${i})">
       <div style="flex:1;min-width:0;">
-        <div class="rc-name">${esc(reg.naam||'Onbekende regeling')}</div>
+        <div class="rc-name">${esc(reg.naam||'Onbekende regeling')}${typeLabel}</div>
         ${reg.doelgroep?`<div class="rc-sub">${esc(reg.doelgroep)}</div>`:''}
       </div>
       <span class="score-badge ${sc}">${reg._label}</span>
@@ -1878,8 +1911,9 @@ function renderMatchCard(reg, i) {
           <div class="excl-ban-lbl">⛔ Uitgesloten — redenen</div>
           <ul>${(reg._uitsluitingsredenen||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul>
         </div>`:''}
+      ${bijdrage?`<div style="background:var(--ok);border:1px solid var(--ok-border);border-radius:8px;padding:.6rem .8rem;margin-bottom:.8rem;"><div style="font-size:.65rem;font-weight:800;color:var(--ok-text);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.2rem;">Wat krijg je</div><div style="font-size:.88rem;font-weight:600;color:var(--ok-text);">${markUncertain(esc(bijdrage))}</div></div>`:''}
       <div class="dg">
-        <div class="dc hl"><div class="dc-lbl">Openstelling</div><div class="dc-val">${markUncertain(esc(reg.openstelling||'—'))}</div></div>
+        <div class="dc hl"><div class="dc-lbl">Aanvraagperiode</div><div class="dc-val">${markUncertain(esc(reg.aanvraagperiode||reg.openstelling||'—'))}</div></div>
         <div class="dc hl"><div class="dc-lbl">Deadline</div><div class="dc-val">${markUncertain(esc(reg.deadline||'—'))}</div></div>
         <div class="dc"><div class="dc-lbl">Min. bedrag</div><div class="dc-val">${markUncertain(esc(reg.min_bedrag||'—'))}</div></div>
         <div class="dc"><div class="dc-lbl">Max. bedrag</div><div class="dc-val">${markUncertain(esc(reg.max_bedrag||'—'))}</div></div>
@@ -1897,6 +1931,15 @@ function renderMatchCard(reg, i) {
       ${evidence?`<div style="margin-top:.7rem;"><div style="font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.38rem;">Bronnen</div>${evidence}</div>`:''}
     </div>
   </div>`;
+}
+
+function toggleHiddenResults() {
+  const hiddenSections = document.querySelectorAll('.hidden-results');
+  const isShowing = hiddenSections[0]?.style.display !== 'none';
+  hiddenSections.forEach(el => { el.style.display = isShowing ? 'none' : 'block'; });
+  // Update button text
+  const statBtn = document.querySelector('.stat[onclick*="toggleHidden"] .stat-l');
+  if (statBtn) statBtn.textContent = isShowing ? 'Toon verborgen (<50%)' : 'Verberg (<50%)';
 }
 
 function toggleCard(i) {
