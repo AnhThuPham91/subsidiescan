@@ -483,28 +483,47 @@ function stripHtml(html) {
 }
 
 async function searchWithSerpApi(domain, serpApiKey) {
+  // 8 gerichte queries per domein — dieper zoeken naar aanvraaginfo, criteria, deadlines
   const queries = [
-    `site:${domain} regeling`,
-    `site:${domain} subsidie`,
-    `site:${domain} deadline`,
-    `site:${domain} hoogte aanvraagbedrag`,
-    `site:${domain} opent sluit`
+    `site:${domain} "wie kan aanvragen"`,
+    `site:${domain} "deadline" OR "sluitingsdatum" 2025`,
+    `site:${domain} "maximaal" OR "max" "€" OR "euro"`,
+    `site:${domain} aanvraagformulier OR aanvragen`,
+    `site:${domain} reglement OR voorwaarden OR criteria`,
+    `site:${domain} filetype:pdf reglement`,
+    `site:${domain} openstelling OR "open voor"`,
+    `site:${domain} subsidieregeling 2025 OR 2026`
   ];
-  const urls = new Set();
+  const urlMap = new Map();
+  let queryCount = 0;
   for (const q of queries) {
-    const resp = await fetch(
-      `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(q)}&api_key=${serpApiKey}&num=10`
-    );
-    if (!resp.ok) continue;
-    const data = await resp.json();
-    const results = data.organic_results || [];
-    results.forEach(r => {
-      if (r.link && r.link.includes(domain)) {
-        urls.add(r.link);
-      }
-    });
+    if (queryCount > 0) await new Promise(r => setTimeout(r, 300)); // Rate limiting
+    queryCount++;
+    log(`SerpAPI query ${queryCount}/${queries.length}: ${q.substring(0, 50)}...`);
+    try {
+      const resp = await fetch(
+        `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(q)}&api_key=${serpApiKey}&num=10`
+      );
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const results = data.organic_results || [];
+      results.forEach(r => {
+        if (r.link && r.link.includes(domain)) {
+          urlMap.set(r.link, r.snippet || '');
+        }
+      });
+    } catch(e) { /* skip */ }
   }
-  return Array.from(urls).slice(0, 15);
+  // Prioriteer URLs met relevante keywords
+  const priorityKw = ['aanvragen','regeling','criteria','voorwaarden','deadline','pdf','wie-kan','openstelling'];
+  const urls = Array.from(urlMap.keys());
+  urls.sort((a, b) => {
+    const aScore = priorityKw.filter(k => a.toLowerCase().includes(k)).length;
+    const bScore = priorityKw.filter(k => b.toLowerCase().includes(k)).length;
+    return bScore - aScore;
+  });
+  log(`${queryCount} SerpAPI queries uitgevoerd, ${urls.length} unieke URLs gevonden`, 'ok');
+  return urls.slice(0, 20);
 }
 
 function setStep(n, state, detail = '') {

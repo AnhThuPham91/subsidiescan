@@ -1102,60 +1102,146 @@ function selectFondsForDiscovery(project) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DISCOVERY — search for additional funds beyond FONDSEN_DB
+   SERP API — RATE LIMITER & QUERY TRACKER
 ═══════════════════════════════════════════════════════════════ */
-async function discoverAdditionalFonds(project) {
-  const knownNames = new Set(FONDSEN_DB.map(f => f.naam.toLowerCase()));
-  const disc = project.disciplines.join(', ') || 'kunst';
-  const rv = project.rechtsvorm.join(', ') || '';
-  const caribisch = project.caribisch?.length > 0 ? ' Caribisch Nederland' : '';
+const serpRateLimiter = {
+  maxQueries: 15,
+  used: 0,
+  delayMs: 300,
+  reset() { this.used = 0; },
+  canQuery() { return this.used < this.maxQueries; },
+  async query(q, apiKey) {
+    if (!this.canQuery()) {
+      log(`SerpAPI limiet bereikt (${this.used}/${this.maxQueries}) — query overgeslagen`, 'warn');
+      return [];
+    }
+    if (this.used > 0) await sleep(this.delayMs);
+    this.used++;
+    log(`SerpAPI query ${this.used}/${this.maxQueries}: ${q.substring(0, 60)}...`);
+    try {
+      const resp = await fetch(`https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(q)}&api_key=${apiKey}&num=10`);
+      if (!resp.ok) return [];
+      const data = await resp.json();
+      return data.organic_results || [];
+    } catch(e) { return []; }
+  }
+};
 
-  // Build targeted search queries based on project profile
+/* ═══════════════════════════════════════════════════════════════
+   FUNCTIE 1 — Diep zoeken binnen bekende fondsen
+   Per domein gerichte queries voor aanvraaginfo, deadlines, criteria
+═══════════════════════════════════════════════════════════════ */
+const URL_PRIORITY_KW = ['richtlijn','wie-kan-indienen','aanvraagvoorwaarden','uitsluitingscrit','projectaanvraag','individuele','instelling','voorwaarden','subsidie','regeling','aanvragen','criteria','pdf','opengesteld','deadline'];
+
+function urlPriority(url) {
+  const u = url.toLowerCase();
+  for (let i=0; i<URL_PRIORITY_KW.length; i++) if (u.includes(URL_PRIORITY_KW[i])) return i;
+  return 99;
+}
+function isRelevantUrl(url) { return URL_PRIORITY_KW.some(k => url.toLowerCase().includes(k)); }
+function isPdfUrl(url)      { return url.toLowerCase().includes('.pdf'); }
+
+async function deepSearchDomain(domain, apiKey) {
+  // 8 gerichte queries per domein — wordt beperkt door rate limiter
   const queries = [
-    `subsidie fonds ${disc} kunstenaar Nederland`,
-    `stichting fonds ${disc} subsidie aanvragen`,
-    `kleine fondsen ${disc} kunstenaar${caribisch}`,
-    `cultureel fonds ${disc} bijdrage aanvraag`
+    `site:${domain} "wie kan aanvragen"`,
+    `site:${domain} "deadline" OR "sluitingsdatum" 2025`,
+    `site:${domain} "maximaal" OR "max" "€" OR "euro"`,
+    `site:${domain} aanvraagformulier OR aanvragen`,
+    `site:${domain} reglement OR voorwaarden OR criteria`,
+    `site:${domain} filetype:pdf reglement`,
+    `site:${domain} openstelling OR "open voor"`,
+    `site:${domain} subsidieregeling 2025 OR 2026`
   ];
 
-  // Add project-specific queries
-  if (project.sociaal?.length > 0) queries.push(`fonds ${project.sociaal.join(' ')} kunst subsidie`);
-  if (project.caribisch?.length > 0) queries.push(`subsidie fonds Caribisch Nederland kunst cultuur`);
-  if (project.achtergrond) queries.push(`fonds culturele diversiteit ${project.achtergrond} kunstenaar`);
+  const urlMap = new Map();
+  for (const q of queries) {
+    if (!serpRateLimiter.canQuery()) break;
+    const results = await serpRateLimiter.query(q, apiKey);
+    results.forEach(r => {
+      if (r.link && r.link.toLowerCase().includes(domain)) {
+        urlMap.set(r.link, r.snippet || '');
+      }
+    });
+  }
 
-  const discoveredMap = new Map(); // url → { naam, url, snippet }
+  // Dedupliceer en prioriteer
+  const urls = Array.from(urlMap.keys());
+  const priorityKw = ['aanvragen','regeling','criteria','voorwaarden','deadline','pdf','wie-kan','openstelling'];
+  urls.sort((a, b) => {
+    const aScore = priorityKw.filter(k => a.toLowerCase().includes(k)).length;
+    const bScore = priorityKw.filter(k => b.toLowerCase().includes(k)).length;
+    return bScore - aScore;
+  });
+  return urls.slice(0, 20);
+}
 
-  for (const q of queries.slice(0, 5)) { // Max 5 queries to conserve API calls
-    try {
-      const resp = await fetch(`https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(q)}&api_key=${appState.apiKeys.serp}&num=10`);
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      (data.organic_results || []).forEach(r => {
-        if (!r.link) return;
-        const domain = new URL(r.link).hostname.replace('www.','');
-        // Skip known funds from FONDSEN_DB
-        const isKnown = FONDSEN_DB.some(f => r.link.includes(new URL(f.url).hostname.replace('www.','')));
-        if (isKnown) return;
-        // Skip generic sites (not actual funds)
-        const skipDomains = ['google.','wikipedia.','facebook.','instagram.','linkedin.','youtube.','rijksoverheid.nl','overheid.nl','kvk.nl','belastingdienst.nl','indeed.','werkenbij','vacature'];
-        if (skipDomains.some(d => domain.includes(d))) return;
+/* ═══════════════════════════════════════════════════════════════
+   FUNCTIE 2 — Open zoeken op projectprofiel
+   Vindt nieuwe fondsen/domeinen via Google op basis van profiel
+═══════════════════════════════════════════════════════════════ */
+const SKIP_DOMAINS = ['google.','wikipedia.','facebook.','instagram.','linkedin.','youtube.','rijksoverheid.nl','overheid.nl','kvk.nl','belastingdienst.nl','indeed.','werkenbij','vacature','twitter.','x.com','tiktok.','pinterest.','nos.nl','nu.nl','ad.nl','volkskrant.nl','nrc.nl','trouw.nl','parool.nl','rtv','omroep'];
+
+async function searchByProjectProfile(projectData, apiKey) {
+  const disc = projectData.disciplines || [];
+  const rv = (projectData.rechtsvorm || []).join(', ') || '';
+  const regio = projectData.regio || '';
+  const queries = [];
+
+  // Bouw queries per discipline
+  for (const d of disc.slice(0, 3)) {
+    queries.push(`${d} subsidie Nederland 2025 aanvragen`);
+    queries.push(`fonds ${d} ${rv} open 2025`);
+    if (regio) queries.push(`${d} subsidie ${regio} 2025`);
+  }
+  // Algemene queries
+  if (disc.length > 0) {
+    queries.push(`${disc[0]} subsidie deadline 2026 "open voor aanvragen"`);
+    queries.push(`kunstsubsidie ${rv} Nederland open aanvraag 2025`);
+  }
+  // Specifieke queries op basis van profiel
+  if (projectData.sociaal?.length > 0) queries.push(`fonds ${projectData.sociaal.join(' ')} kunst subsidie Nederland`);
+  if (projectData.caribisch?.length > 0) queries.push(`subsidie fonds Caribisch Nederland kunst cultuur 2025`);
+  if (projectData.achtergrond) queries.push(`fonds culturele diversiteit ${projectData.achtergrond} kunstenaar`);
+
+  const discoveredMap = new Map(); // domain → { naam, url, snippet }
+  const knownDomains = new Set(FONDSEN_DB.map(f => {
+    try { return new URL(f.url).hostname.replace('www.',''); } catch(e) { return ''; }
+  }));
+
+  for (const q of queries) {
+    if (!serpRateLimiter.canQuery()) break;
+    const results = await serpRateLimiter.query(q, apiKey);
+    results.forEach(r => {
+      if (!r.link) return;
+      try {
+        const url = new URL(r.link);
+        const domain = url.hostname.replace('www.','');
+        // Alleen .nl domeinen
+        if (!domain.endsWith('.nl')) return;
+        // Skip bekende fondsen
+        if (knownDomains.has(domain)) return;
+        // Skip generieke sites
+        if (SKIP_DOMAINS.some(d => domain.includes(d))) return;
+        // Max 1 URL per nieuw domein
         if (!discoveredMap.has(domain)) {
           discoveredMap.set(domain, { naam: r.title || domain, url: r.link, snippet: r.snippet || '' });
         }
-      });
-    } catch(e) { /* skip */ }
+      } catch(e) { /* ongeldige URL */ }
+    });
   }
 
   if (discoveredMap.size === 0) return [];
 
-  // Use Claude to evaluate which discovered sites are actual funds worth crawling
+  // Claude evalueert welke sites echte fondsen zijn
   const candidates = Array.from(discoveredMap.values()).slice(0, 12);
+  const disc_str = disc.join(', ') || 'kunst';
   const evalPrompt = `Je bent een expert in Nederlandse kunst- en cultuursubsidies.
 Hieronder staan websites gevonden via een zoekopdracht. Bepaal welke ECHTE fondsen of stichtingen zijn die subsidies/bijdragen geven aan kunstenaars of culturele projecten.
 
-Project disciplines: ${disc}
+Project disciplines: ${disc_str}
 Rechtsvorm: ${rv}
-${project.caribisch?.length > 0 ? 'Caribisch Nederland relevant: ja' : ''}
+${projectData.caribisch?.length > 0 ? 'Caribisch Nederland relevant: ja' : ''}
 
 KANDIDATEN:
 ${candidates.map((c,i) => `${i+1}. ${c.naam}\n   URL: ${c.url}\n   ${c.snippet}`).join('\n\n')}
@@ -1180,56 +1266,80 @@ Als geen enkele kandidaat een echt fonds is, geef een lege array: []`;
     const parsed = JSON.parse(m ? m[1] : rawText);
     if (!Array.isArray(parsed)) return [];
 
-    // Convert to FONDSEN_DB-like format and return max 2 extra funds
-    return parsed.slice(0, 2).map(f => ({
+    return parsed.slice(0, 10).map(f => ({
       naam: f.naam,
       focus: f.focus || '',
       url: f.url,
-      disciplines: project.disciplines, // Assume match since Claude said relevant
-      rechtsvormen: project.rechtsvorm.length > 0 ? project.rechtsvorm : ["individuele kunstenaar (zzp)","stichting"],
-      _discovered: true, // Mark as discovered (not from DB)
-      score: 5 // Base score for discovered funds
+      disciplines: projectData.disciplines,
+      rechtsvormen: projectData.rechtsvorm?.length > 0 ? projectData.rechtsvorm : ["individuele kunstenaar (zzp)","stichting"],
+      _discovered: true,
+      score: 5
     }));
   } catch(e) {
-    return []; // Silent fail — discovery is best-effort
+    return [];
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SERP API — targeted queries
+   FUNCTIE 3 — Orchestrator: runFullSearch
+   Combineert deep search (Functie 1) + profile search (Functie 2)
 ═══════════════════════════════════════════════════════════════ */
-const URL_PRIORITY_KW = ['richtlijn','wie-kan-indienen','aanvraagvoorwaarden','uitsluitingscrit','projectaanvraag','individuele','instelling','voorwaarden','subsidie','regeling','aanvragen','criteria','pdf','opengesteld','deadline'];
+async function runFullSearch(startFonds, projectData, apiKey) {
+  serpRateLimiter.reset();
+  const allUrls = new Map(); // url → bron (domein of 'discovery')
 
-function urlPriority(url) {
-  const u = url.toLowerCase();
-  for (let i=0; i<URL_PRIORITY_KW.length; i++) if (u.includes(URL_PRIORITY_KW[i])) return i;
-  return 99;
-}
-function isRelevantUrl(url) { return URL_PRIORITY_KW.some(k => url.toLowerCase().includes(k)); }
-function isPdfUrl(url)      { return url.toLowerCase().includes('.pdf'); }
-
-async function searchWithSerp(domain) {
-  const queries = [
-    `site:${domain} richtlijnen`,
-    `site:${domain} wie kan indienen`,
-    `site:${domain} aanvraagvoorwaarden`,
-    `site:${domain} uitsluitingscriteria`,
-    `site:${domain} projectaanvraag`,
-    `site:${domain} individuele makers`,
-    `site:${domain} instellingen`
-  ];
-  const urlMap = new Map();
-  for (const q of queries) {
+  // ── Stap 1: Deep search binnen bekende fondsen
+  for (const fonds of startFonds) {
     try {
-      const resp = await fetch(`https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(q)}&api_key=${appState.apiKeys.serp}&num=8`);
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      (data.organic_results||[]).forEach(r => {
-        if (r.link && r.link.toLowerCase().includes(domain)) urlMap.set(r.link, r.snippet||'');
-      });
-    } catch(e) { /* skip */ }
+      const domain = new URL(fonds.url).hostname.replace('www.','');
+      log(`Deep search: ${domain}...`);
+      const urls = await deepSearchDomain(domain, apiKey);
+      urls.forEach(u => allUrls.set(u, domain));
+      fonds._serpUrls = urls; // Bewaar per fonds voor crawl
+      log(`${urls.length} deep URLs voor ${domain}`, 'ok');
+    } catch(e) {
+      log(`Deep search fout voor ${fonds.naam}: ${e.message}`, 'warn');
+      fonds._serpUrls = [];
+    }
   }
-  return Array.from(urlMap.keys()).slice(0,18);
+
+  // ── Stap 2: Open search op projectprofiel → nieuwe fondsen
+  log('Open zoeken naar nieuwe fondsen op basis van profiel...');
+  let discoveredFonds = [];
+  try {
+    discoveredFonds = await searchByProjectProfile(projectData, apiKey);
+    if (discoveredFonds.length > 0) {
+      log(`${discoveredFonds.length} nieuw ontdekte fonds(en): ${discoveredFonds.map(f=>f.naam).join(', ')}`, 'ok');
+
+      // Deep search ook voor nieuw ontdekte fondsen (als budget resteert)
+      for (const fonds of discoveredFonds) {
+        try {
+          const domain = new URL(fonds.url).hostname.replace('www.','');
+          const urls = await deepSearchDomain(domain, apiKey);
+          urls.forEach(u => allUrls.set(u, domain));
+          fonds._serpUrls = urls;
+          log(`${urls.length} deep URLs voor ontdekt fonds ${domain}`, 'ok');
+        } catch(e) {
+          fonds._serpUrls = [];
+        }
+      }
+    } else {
+      log('Geen aanvullende fondsen gevonden via profielzoekopdracht.', 'warn');
+    }
+  } catch(e) {
+    log(`Profielzoekopdracht overgeslagen: ${e.message}`, 'warn');
+  }
+
+  // ── Stap 3: Combineer en sorteer
+  const priorityKw = ['aanvragen','criteria','deadline','pdf','regeling','voorwaarden','openstelling','reglement'];
+  const sortedUrls = Array.from(allUrls.keys()).sort((a, b) => {
+    const aScore = priorityKw.filter(k => a.toLowerCase().includes(k)).length;
+    const bScore = priorityKw.filter(k => b.toLowerCase().includes(k)).length;
+    return bScore - aScore;
+  });
+
+  log(`Totaal ${sortedUrls.length} unieke URLs gevonden (${serpRateLimiter.used} SerpAPI queries gebruikt)`, 'ok');
+  return { urls: sortedUrls.slice(0, 30), discoveredFonds };
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1544,30 +1654,36 @@ async function startDiscovery() {
   setPhase(2);
 
   const selectedFonds = selectFondsForDiscovery(appState.project);
-  if (!selectedFonds.length) {
+  if (!selectedFonds.length && !appState.apiKeys.serp) {
     alert('Geen passende fondsen gevonden op basis van je profiel. Vul discipline of rechtsvorm in.');
     setPhase(1); return;
   }
 
-  // Discovery: search for additional funds beyond FONDSEN_DB
-  log('Zoeken naar aanvullende fondsen buiten de database...', 'ok');
+  // ── RunFullSearch: deep search + profile discovery via SerpAPI
+  log('SerpAPI orchestrator: deep search + profielzoekopdracht starten...', 'ok');
   let discoveredFonds = [];
-  try {
-    discoveredFonds = await discoverAdditionalFonds(appState.project);
-    if (discoveredFonds.length > 0) {
-      log(`${discoveredFonds.length} extra fonds(en) ontdekt: ${discoveredFonds.map(f=>f.naam).join(', ')}`, 'ok');
-    } else {
-      log('Geen aanvullende fondsen gevonden — doorgaan met database-selectie.', 'warn');
+  if (appState.apiKeys.serp) {
+    try {
+      const searchResult = await runFullSearch(selectedFonds, appState.project, appState.apiKeys.serp);
+      discoveredFonds = searchResult.discoveredFonds || [];
+      log(`SerpAPI klaar: ${searchResult.urls.length} URLs, ${discoveredFonds.length} nieuwe fondsen, ${serpRateLimiter.used} queries gebruikt`, 'ok');
+    } catch(e) {
+      log(`SerpAPI orchestrator fout: ${e.message}`, 'warn');
     }
-  } catch(e) {
-    log(`Discovery overgeslagen: ${e.message}`, 'warn');
+  } else {
+    log('Geen SerpAPI key — alleen database-fondsen worden gebruikt.', 'warn');
   }
 
   // Combine: DB-selected + discovered (max 6 total)
   const allFonds = [...selectedFonds, ...discoveredFonds].slice(0, 6);
 
+  if (!allFonds.length) {
+    alert('Geen passende fondsen gevonden. Vul discipline of rechtsvorm in.');
+    setPhase(1); return;
+  }
+
   initFondsPB(allFonds);
-  log(`${allFonds.length} fondsen geselecteerd: ${allFonds.map(f=>f.naam).join(', ')}${discoveredFonds.length>0?' (incl. '+discoveredFonds.length+' ontdekt)':''}`, 'ok');
+  log(`${allFonds.length} fondsen geselecteerd: ${allFonds.map(f=>f.naam).join(', ')}${discoveredFonds.length>0?' (incl. '+discoveredFonds.length+' ontdekt via SerpAPI)':''}`, 'ok');
 
   await runFullSubsidyDiscovery(allFonds, appState.project);
 }
@@ -1580,11 +1696,17 @@ async function runFullSubsidyDiscovery(selectedFonds, project) {
     log(`--- Starten: ${fonds.naam} ---`);
 
     try {
-      // ── Step 1: SerpAPI
+      // ── Step 1: SerpAPI URLs (al verzameld door runFullSearch)
       setMiniStep(fonds.naam, 1, 'active');
-      log(`SerpAPI queries voor ${new URL(fonds.url).hostname}...`);
-      const serpUrls = await searchWithSerp(new URL(fonds.url).hostname);
-      log(`${serpUrls.length} URLs gevonden`, 'ok');
+      const serpUrls = fonds._serpUrls || [];
+      if (serpUrls.length === 0 && appState.apiKeys.serp) {
+        // Fallback: als runFullSearch deze fonds niet heeft bereikt
+        log(`Fallback deep search voor ${new URL(fonds.url).hostname}...`);
+        const domain = new URL(fonds.url).hostname.replace('www.','');
+        const fallbackUrls = await deepSearchDomain(domain, appState.apiKeys.serp);
+        serpUrls.push(...fallbackUrls);
+      }
+      log(`${serpUrls.length} deep URLs voor ${fonds.naam}`, 'ok');
       setMiniStep(fonds.naam, 1, 'done');
 
       // ── Step 2+3: Crawl
